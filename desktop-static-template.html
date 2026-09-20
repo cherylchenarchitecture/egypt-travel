@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journey to Egypt</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400;1,500&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#466145;
+  --green-deep:#324531;
+  --cream:#F7F3EC;
+  --card:#FEFCF8;
+  --ink:#2E2A24;
+  --ink-soft:#6B6054;
+  --ink-faint:#A79E90;
+  --line:#DDD7CC;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+body{
+  background:var(--cream);
+  color:var(--ink);
+  font-family:'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif;
+  font-weight:400;
+}
+.serif{ font-family:'Cormorant Garamond',serif; }
+.eyebrow{
+  font-size:0.72rem;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+}
+
+/* ══════════ HERO — masthead, not dashboard ══════════ */
+.hero{
+  min-height:64vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:80px 6vw 64px;
+  color:#fff;
+  background:var(--green);
+}
+.hero .eyebrow{ color:rgba(255,255,255,0.55); margin-bottom:26px; }
+.hero h1{
+  font-weight:400;
+  font-style:italic;
+  font-size:clamp(2.8rem,7vw,4.6rem);
+  letter-spacing:0.01em;
+  line-height:1.05;
+}
+.hero .rule{
+  width:46px; height:1px;
+  background:rgba(255,255,255,0.4);
+  margin:26px auto;
+}
+.hero .sub{
+  font-size:0.95rem;
+  letter-spacing:0.04em;
+  color:rgba(255,255,255,0.72);
+  font-weight:300;
+}
+
+/* ══════════ STICKY NAV — same visual language as the mobile day rail ══════════ */
+.sticky-nav{
+  position:sticky; top:0; z-index:30;
+  background:var(--green);
+  padding:9px 0;
+  overflow-x:auto;
+  white-space:nowrap;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.sticky-nav::-webkit-scrollbar{ display:none; }
+.sticky-nav-inner{ display:flex; width:100%; gap:6px; padding:0 6vw; }
+.nav-tab{
+  flex:1 1 0;
+  min-width:44px;
+  height:52px;
+  border-radius:11px;
+  background:rgba(255,255,255,0.15);
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  text-decoration:none;
+}
+.nav-tab.wide{ flex:1 1 0; padding:0 8px; }
+.nav-tab .t-date{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:500;
+  font-size:17px;
+  line-height:1;
+  color:#fff;
+}
+.nav-tab .t-loc{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:10px;
+  line-height:1;
+  color:rgba(255,255,255,0.65);
+}
+.nav-tab.active{ background:#fff; }
+.nav-tab.active .t-date{ color:var(--green); }
+.nav-tab.active .t-loc{ color:#6B3E1E; }
+
+/* ══════════ SECTION SHELL ══════════ */
+.section{ padding:64px 6vw; max-width:920px; margin:0 auto; }
+.section-head{ margin-bottom:34px; }
+.section-head .eyebrow{ margin-bottom:8px; }
+.section-head h2{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:400;
+  font-size:2rem;
+}
+.section-head .desc{
+  color:var(--ink-soft);
+  font-size:0.88rem;
+  margin-top:8px;
+}
+
+/* ══════════ MAP ══════════ */
+#map-canvas{
+  height:420px;
+  border:1px solid var(--line);
+}
+.map-legend{ display:flex; flex-wrap:wrap; gap:8px 20px; margin-top:16px; }
+.map-legend .lg-item{ display:flex; align-items:center; gap:6px; font-size:0.78rem; color:var(--ink-soft); }
+.map-legend .lg-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+/* ══════════ DAY SECTIONS — editorial, not app-card ══════════ */
+.day-section{
+  padding:56px 6vw;
+  border-top:1px solid var(--line);
+  max-width:920px;
+  margin:0 auto;
+  scroll-margin-top:52px;
+}
+.day-head{
+  display:flex;
+  align-items:baseline;
+  gap:22px;
+  margin-bottom:8px;
+}
+.day-head .num{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:300;
+  font-size:3.2rem;
+  color:var(--green);
+  line-height:1;
+  flex-shrink:0;
+}
+.day-head h2{
+  font-size:1.15rem;
+  font-weight:500;
+  letter-spacing:0.01em;
+}
+.day-sub{
+  color:var(--ink-faint);
+  font-size:0.8rem;
+  letter-spacing:0.04em;
+  margin:2px 0 26px 62px;
+}
+.rhythm{
+  margin:0 0 22px 62px;
+  padding-left:12px;
+  border-left:2px solid var(--green);
+  font-size:0.85rem;
+  color:var(--ink-soft);
+  font-style:italic;
+}
+
+.tl{ margin-left:62px; }
+.tl-item{
+  display:flex; gap:20px;
+  padding:15px 0;
+  border-bottom:1px solid var(--line);
+}
+.tl-item.clickable{ cursor:pointer; }
+.tl-item.clickable:hover .name{ color:var(--green-deep); }
+.tl-item .chev{ margin-left:auto; font-size:0.8rem; color:var(--ink-faint); flex-shrink:0; }
+.tl-item:last-child{ border-bottom:none; }
+.tl-item .time-col{
+  flex-shrink:0; width:78px;
+  font-size:0.76rem;
+  letter-spacing:0.03em;
+  color:var(--ink-faint);
+  padding-top:2px;
+}
+.tl-item .body{ flex:1; min-width:0; }
+.tl-item .name{ font-size:0.98rem; font-weight:500; display:flex; align-items:center; gap:7px; }
+.tl-item .name i{ font-size:0.85rem; color:var(--green); flex-shrink:0; }
+.tl-item .note{ font-size:0.83rem; color:var(--ink-soft); margin-top:4px; line-height:1.6; font-weight:400; }
+.tl-item a.notion-link{
+  display:inline-flex; align-items:center; gap:4px;
+  margin-top:7px; font-size:0.73rem; color:var(--green-deep); text-decoration:none;
+}
+
+.empty-day{ color:var(--ink-faint); font-size:0.86rem; margin-left:62px; font-style:italic; }
+
+/* ══════════ DETAIL OVERLAY — 對齊手機版點進去看到的內容 ══════════ */
+.detail-overlay{
+  display:none;
+  position:fixed; inset:0;
+  background:rgba(46,42,36,0.45);
+  z-index:100;
+  align-items:center; justify-content:center;
+  padding:24px;
+}
+.detail-overlay.open{ display:flex; }
+.detail-card{
+  background:var(--cream);
+  max-width:520px; width:100%;
+  max-height:82vh; overflow-y:auto;
+  border:1px solid var(--line);
+  position:relative;
+}
+.detail-close{
+  position:absolute; top:16px; right:16px;
+  background:rgba(255,255,255,0.85); border:none; cursor:pointer;
+  color:var(--ink); font-size:1.3rem; line-height:1;
+  width:30px; height:30px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+}
+.detail-cover{
+  width:100%; height:260px;
+  object-fit:cover; object-position:50% 50%;
+  display:block;
+}
+.detail-body{ padding:30px 32px 34px; }
+.detail-tag{
+  font-size:0.68rem; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--green-deep); margin-bottom:10px; display:block;
+}
+.detail-card h3{
+  font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:500;
+  font-size:1.55rem; line-height:1.2;
+}
+.detail-title-en{
+  font-family:'Cormorant Garamond',serif; font-style:italic;
+  color:var(--ink-soft); font-size:0.92rem; margin-top:3px;
+}
+.detail-meta{
+  display:flex; gap:32px; margin:20px 0 18px;
+  padding-bottom:18px; border-bottom:1px solid var(--line);
+}
+.detail-meta .label{ font-size:0.66rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:3px; }
+.detail-meta .value{ font-size:0.92rem; }
+.detail-section-label{ font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-faint); margin:16px 0 8px; }
+.detail-highlights{ font-size:0.85rem; line-height:1.75; color:var(--ink); padding-left:12px; border-left:2px solid var(--green); }
+.detail-bg{ font-size:0.85rem; line-height:1.8; color:var(--ink); }
+.detail-bg img{ width:100%; border:1px solid var(--line); margin:8px 0; display:block; }
+.detail-notion{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  background:var(--ink); color:#F7F3EC !important; text-decoration:none;
+  padding:12px; margin-top:22px; font-size:0.85rem;
+}
+
+/* ══════════ INFORMATION SECTION — 分類卡片（第一層） ══════════ */
+.info-cat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:14px;
+}
+.info-cat-card{
+  display:flex; align-items:center; gap:14px;
+  background:var(--card);
+  border:1px solid var(--line);
+  padding:16px 18px;
+  cursor:pointer;
+}
+.info-cat-card:hover{ border-color:var(--green); }
+.info-cat-card .icon-box{
+  width:42px; height:42px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; font-size:1.1rem;
+}
+.info-cat-card .cat-body{ min-width:0; }
+.info-cat-card .cat-name{ font-weight:500; font-size:0.98rem; }
+.info-cat-card .cat-desc{ font-size:0.76rem; color:var(--ink-soft); margin-top:2px; }
+.info-cat-card .chev{ margin-left:auto; color:var(--ink-faint); font-size:0.85rem; flex-shrink:0; }
+
+/* ══════════ 分類文章清單（第二層）／文章內容（第三層）── 覆蓋整個畫面，仿手機版的頁面堆疊 ══════════ */
+.screen-overlay{
+  display:none;
+  position:fixed; inset:0;
+  background:var(--cream);
+  flex-direction:column;
+}
+.screen-overlay.open{ display:flex; }
+#infoCatOverlay{ z-index:90; }
+#infoArticleOverlay{ z-index:95; }
+.screen-overlay .s-header{
+  background:var(--green);
+  color:#fff;
+  padding:20px 6vw 22px;
+  flex-shrink:0;
+}
+.screen-overlay .s-back{
+  background:none; border:none; color:#fff; cursor:pointer;
+  font-size:1.35rem; line-height:1; margin-bottom:14px; padding:0;
+  display:inline-flex;
+}
+.screen-overlay .s-eyebrow{
+  font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase;
+  color:rgba(255,255,255,0.65); margin-bottom:4px;
+}
+.screen-overlay .s-title{
+  font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:500;
+  font-size:1.55rem;
+}
+.screen-overlay .s-body{
+  flex:1; overflow-y:auto;
+  padding:28px 6vw 70px;
+}
+.screen-overlay .s-body-inner{ max-width:760px; margin:0 auto; }
+
+.cat-list-row{
+  display:flex; align-items:center; gap:12px;
+  padding:16px 0; border-top:1px solid var(--line);
+  cursor:pointer;
+}
+.cat-list-row:first-child{ border-top:none; }
+.cat-list-row .emoji{ font-size:1.1rem; flex-shrink:0; width:22px; text-align:center; }
+.cat-list-row .a-title{
+  flex:1; min-width:0;
+  font-family:'Cormorant Garamond',serif;
+  font-weight:500; font-style:italic;
+  font-size:1.08rem;
+}
+.cat-list-row:hover .a-title{ color:var(--green-deep); }
+.cat-list-row .chev{ color:var(--ink-faint); font-size:0.85rem; flex-shrink:0; }
+
+.article-content{ font-size:0.92rem; color:var(--ink); line-height:1.9; font-weight:400; }
+.article-content p{ margin:0 0 12px; }
+.article-content .ac-h1{ font-family:'Cormorant Garamond',serif; font-weight:500; font-size:1.15rem; margin:18px 0 8px; }
+.article-content .ac-h2{ font-weight:500; font-size:0.95rem; margin:15px 0 6px; }
+.article-content .ac-h3{ font-weight:500; font-size:0.88rem; color:var(--green-deep); margin:13px 0 5px; }
+.article-content .ac-bullet{ display:flex; gap:8px; margin:5px 0; }
+.article-content .ac-bullet::before{ content:'—'; color:var(--green); flex-shrink:0; }
+.article-content .ac-quote{
+  border-left:2px solid var(--green);
+  padding-left:14px; margin:12px 0;
+  font-style:italic; color:var(--ink-soft);
+}
+.article-content hr{ border:none; border-top:1px solid var(--line); margin:16px 0; }
+.article-content img{ width:100%; border:1px solid var(--line); margin:10px 0; display:block; }
+.article-content .ac-link{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:0.82rem; color:var(--green-deep); text-decoration:none;
+  border-bottom:1px solid var(--line); padding:6px 0; margin:6px 0;
+}
+.article-content table{ border-collapse:collapse; width:100%; margin:12px 0; font-size:0.8rem; }
+.article-content th{ text-align:left; font-weight:500; color:var(--ink-soft); border-bottom:1px solid var(--ink); padding:6px 10px; }
+.article-content td{ padding:6px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+.article-content .table-wrap{ overflow-x:auto; }
+.article-notion{
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:18px; font-size:0.78rem; color:var(--green-deep); text-decoration:none;
+  border-bottom:1px solid var(--line); padding-bottom:6px;
+}
+
+.snapshot-footer{
+  text-align:center;
+  padding:36px;
+  color:var(--ink-faint);
+  font-size:0.76rem;
+  border-top:1px solid var(--line);
+  letter-spacing:0.02em;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ HERO ══════════ -->
+<section class="hero" id="top">
+  <div class="eyebrow">Egypt · Twelve Days</div>
+  <h1>Journey to Egypt</h1>
+  <div class="rule"></div>
+  <div class="sub">Oct 8 – Oct 19, 2026 · 12 Days · Taipei landing Oct 20</div>
+</section>
+
+<!-- ══════════ STICKY NAV ══════════ -->
+<nav class="sticky-nav" id="stickyNav">
+  <div class="sticky-nav-inner" id="navInner"></div>
+</nav>
+
+<!-- ══════════ MAP ══════════ -->
+<section class="section" id="map">
+  <div class="section-head">
+    <div class="eyebrow">Route</div>
+    <h2>行程地圖</h2>
+    <div class="desc">全部景點一次呈現，點圖釘看名稱</div>
+  </div>
+  <div id="map-canvas"></div>
+  <div class="map-legend" id="mapLegend"></div>
+</section>
+
+<!-- ══════════ DAY SECTIONS (injected) ══════════ -->
+<div id="daysContainer"></div>
+
+<!-- ══════════ INFORMATION (injected — category cards) ══════════ -->
+<section class="section" id="info">
+  <div class="section-head">
+    <div class="eyebrow">Reference</div>
+    <h2>資訊 · Information</h2>
+    <div class="desc">歷史背景、神話、景點細節與其他實用資訊</div>
+  </div>
+  <div class="info-cat-grid" id="infoCatGrid"></div>
+</section>
+
+<div class="snapshot-footer">資料快照：__GENERATED_AT__ ・ 靜態版，不會自動同步 Notion</div>
+
+<!-- ══════════ DETAIL OVERLAY ══════════ -->
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this) closeDetail()">
+  <div class="detail-card">
+    <button class="detail-close" onclick="closeDetail()">×</button>
+    <img class="detail-cover" id="detailCover" style="display:none" alt="">
+    <div class="detail-body">
+      <span class="detail-tag" id="detailTag"></span>
+      <h3 id="detailTitle"></h3>
+      <div class="detail-title-en" id="detailTitleEn"></div>
+      <div class="detail-meta">
+        <div><div class="label">時間</div><div class="value" id="detailTime"></div></div>
+        <div><div class="label">年代</div><div class="value" id="detailEra"></div></div>
+      </div>
+      <div id="detailHighlightsWrap">
+        <div class="detail-section-label">重點</div>
+        <div class="detail-highlights" id="detailHighlights"></div>
+      </div>
+      <div id="detailBgWrap">
+        <div class="detail-section-label">背景資料</div>
+        <div class="detail-bg" id="detailBg"></div>
+      </div>
+      <a class="detail-notion" id="detailNotion" href="#" target="_blank" rel="noopener">
+        <i class="ti ti-notebook"></i> 在 Notion 查看完整內容
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ INFO：分類文章清單（第二層） ══════════ -->
+<div class="screen-overlay" id="infoCatOverlay">
+  <div class="s-header">
+    <button class="s-back" onclick="closeInfoCategory()"><i class="ti ti-arrow-left"></i></button>
+    <div class="s-title" id="infoCatTitle"></div>
+  </div>
+  <div class="s-body"><div class="s-body-inner" id="infoCatList"></div></div>
+</div>
+
+<!-- ══════════ INFO：文章內容（第三層） ══════════ -->
+<div class="screen-overlay" id="infoArticleOverlay">
+  <div class="s-header">
+    <button class="s-back" onclick="closeInfoArticle()"><i class="ti ti-arrow-left"></i></button>
+    <div class="s-eyebrow" id="infoArtCat"></div>
+    <div class="s-title" id="infoArtTitle"></div>
+  </div>
+  <div class="s-body"><div class="s-body-inner">
+    <div class="article-content" id="infoArtBody"></div>
+    <a class="article-notion" id="infoArtNotion" href="#" target="_blank" rel="noopener">
+      <i class="ti ti-notebook"></i> 在 Notion 查看完整內容
+    </a>
+  </div></div>
+</div>
+
+<script>
+/* ── 資料在產生檔案時直接寫死在這裡，開啟這個 HTML 不會有任何網路請求連 Notion。 ── */
+const ITINERARY_DATA = /*__DATA__*/{}/*__END_DATA__*/;
+const INFO_DATA = /*__INFO_DATA__*/{}/*__END_INFO_DATA__*/;
+
+const TOTAL_DAYS = 14;
+const BASE_DATE = new Date('2026-10-07T00:00:00+08:00'); /* Day 0 */
+const WEEKDAY_ZH = ['週日','週一','週二','週三','週四','週五','週六'];
+const DAY_LOCATION = ['台北','開羅','薩卡拉・達舒爾','吉薩','白沙漠・黑沙漠','路克索','路克索','亞斯文','亞斯文','阿布辛貝','亞歷山卓','亞歷山卓','開羅','台北'];
+/* 分類順序與呈現方式，對齊原本手機版的邏輯 */
+const INFO_CATEGORY_ORDER = ['歷史','神話','景點細節','吃食相關','其他'];
+const IMAGE_CATEGORIES  = ['神話'];
+const BLOCKS_CATEGORIES = ['景點細節','其他','吃食相關'];
+
+function escHtml(str){
+  if(str==null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function dateForDay(d){
+  const dt = new Date(BASE_DATE);
+  dt.setDate(dt.getDate()+d);
+  return dt;
+}
+function fmtMD(dt){ return (dt.getMonth()+1)+'/'+String(dt.getDate()).padStart(2,'0'); }
+function titleToSlug(title){ return (title||'').trim().replace(/[\/\\:*?"<>|]+/g,'_'); }
+
+function sortItems(items){
+  return items.slice().sort((a,b)=>{
+    const aT = a.hasTime && a.timeStart, bT = b.hasTime && b.timeStart;
+    if(aT && bT) return a.timeStart.localeCompare(b.timeStart);
+    if(aT) return -1;
+    if(bT) return 1;
+    return 0;
+  });
+}
+
+/* ── sticky nav：跟手機版日期軸同樣式，只顯示 D+數字 與日期，不顯示地名 ── */
+function renderNav(){
+  const inner = document.getElementById('navInner');
+  let html = `<a href="#map" class="nav-tab wide" data-target="map"><span class="t-date">地圖</span></a>`;
+  for(let d=0; d<TOTAL_DAYS; d++){
+    const dt = dateForDay(d);
+    html += `<a href="#day-${d}" class="nav-tab" data-target="day-${d}">
+      <span class="t-date">D${d}</span>
+      <span class="t-loc">/${String(dt.getDate()).padStart(2,'0')}</span>
+    </a>`;
+  }
+  html += `<a href="#info" class="nav-tab wide" data-target="info"><span class="t-date">資訊</span></a>`;
+  inner.innerHTML = html;
+}
+
+/* ── 每日時間軸 ── */
+function renderDays(){
+  const container = document.getElementById('daysContainer');
+  let html = '';
+  for(let d=0; d<TOTAL_DAYS; d++){
+    const items = sortItems(ITINERARY_DATA[String(d)] || []);
+    const dt = dateForDay(d);
+    const weekday = WEEKDAY_ZH[dt.getDay()];
+
+    html += `<section class="day-section" id="day-${d}">
+      <div class="day-head">
+        <span class="num">${String(d).padStart(2,'0')}</span>
+        <h2>${escHtml(DAY_LOCATION[d]||'')}</h2>
+      </div>
+      <div class="day-sub">${fmtMD(dt)}（${weekday}）</div>`;
+
+    if(items[0]?.rhythm){
+      html += `<div class="rhythm">${escHtml(items[0].rhythm)}</div>`;
+    }
+
+    if(items.length === 0){
+      html += `<div class="empty-day">本日無行程資料</div>`;
+    } else {
+      html += `<div class="tl">`;
+      items.forEach(it => {
+        const icon = it.tagConfig?.icon || 'ti-map-pin';
+        const clickable = hasDetail(it);
+        let timeStr = '';
+        if(it.hasTime && it.timeStart) timeStr = it.timeStart + (it.timeEnd ? '–'+it.timeEnd : '');
+        else if(it.dateOnly) timeStr = '全天';
+
+        html += `<div class="tl-item${clickable?' clickable':''}"${clickable?` onclick="openDetail('${escHtml(it.id)}')"`:''}>
+          <div class="time-col">${escHtml(timeStr)}</div>
+          <div class="body">
+            <div class="name"><i class="ti ${escHtml(icon)}"></i>${escHtml(it.title)}${clickable?'<i class="ti ti-chevron-right chev"></i>':''}</div>
+            ${it.highlights ? `<div class="note">${escHtml(it.highlights)}</div>` : ''}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</section>`;
+  }
+  container.innerHTML = html;
+}
+
+/* ── Information 區塊：依分類、依原本邏輯決定顯示 summary 或完整內文 ── */
+function renderSummaryLite(text, itemTitle){
+  if(!text) return '';
+  return text.split('\n').map(line => {
+    const t = line.trim();
+    if(!t) return '';
+    if(t === '(map)'){
+      const slug = titleToSlug(itemTitle||'');
+      return `<img src="public/maps/${escHtml(slug)}.jpg" alt="${escHtml(itemTitle||'')}"
+        loading="lazy" onerror="this.onerror=null;this.src='public/maps/${escHtml(slug)}.png';this.onerror=function(){this.remove()}">`;
+    }
+    if(t.startsWith('## ')) return `<div class="ac-h2">${escHtml(t.slice(3))}</div>`;
+    if(t.startsWith('• ') || t.startsWith('- ')) return `<div class="ac-bullet">${escHtml(t.slice(2))}</div>`;
+    return `<p>${escHtml(t)}</p>`;
+  }).join('');
+}
+
+function renderBlockContent(text){
+  if(!text) return '<p style="color:var(--ink-faint)">（暫無內容）</p>';
+  const lines = text.split('\n');
+  let h = '';
+  let i = 0;
+  while(i < lines.length){
+    const line = lines[i];
+    if(!line.trim()){ i++; continue; }
+
+    if(line.startsWith('# ')) h += `<div class="ac-h1">${escHtml(line.slice(2))}</div>`;
+    else if(line.startsWith('## ')) h += `<div class="ac-h2">${escHtml(line.slice(3))}</div>`;
+    else if(line.startsWith('### ')) h += `<div class="ac-h3">${escHtml(line.slice(4))}</div>`;
+    else if(line.startsWith('• ') || line.startsWith('· ')) h += `<div class="ac-bullet">${escHtml(line.slice(2))}</div>`;
+    else if(line === '---') h += `<hr>`;
+    else if(line.startsWith('🖼 ')){
+      const caption = line.slice(2).trim();
+      const url = lines[i+1] && !lines[i+1].startsWith('🖼') && !lines[i+1].startsWith('🔗') ? lines[i+1].trim() : '';
+      if(url && url.startsWith('http')){
+        h += `<img src="${escHtml(url)}" alt="${escHtml(caption)}" loading="lazy" onerror="this.style.display='none'">`;
+        i += 2; continue;
+      }
+    }
+    else if(line.startsWith('🔗 ')){
+      const label = line.slice(2).trim();
+      const url = lines[i+1] && lines[i+1].startsWith('http') ? lines[i+1].trim() : label;
+      h += `<a class="ac-link" href="${escHtml(url)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i>${escHtml(label)}</a>`;
+      if(lines[i+1] && lines[i+1].startsWith('http')) i++;
+    }
+    else if(line.startsWith('❝ ')) h += `<div class="ac-quote">${escHtml(line.slice(2))}</div>`;
+    else if(line.startsWith('▸ ')) h += `<div style="margin:4px 0"><span style="color:var(--green)">▸</span> ${escHtml(line.slice(2))}</div>`;
+    else if(line.startsWith('| ')){
+      const tableLines = [];
+      while(i < lines.length && lines[i].trim().startsWith('|')){ tableLines.push(lines[i]); i++; }
+      const parseRow = r => r.split('|').slice(1,-1).map(c => c.trim());
+      const header = parseRow(tableLines[0] || '');
+      const body = tableLines.slice(2);
+      h += '<div class="table-wrap"><table><thead><tr>' +
+        header.map(c => `<th>${escHtml(c)}</th>`).join('') + '</tr></thead><tbody>';
+      body.forEach(row => {
+        const cells = parseRow(row);
+        h += '<tr>' + cells.map(c => `<td>${escHtml(c)}</td>`).join('') + '</tr>';
+      });
+      h += '</tbody></table></div>';
+      continue;
+    }
+    else h += `<p>${escHtml(line)}</p>`;
+    i++;
+  }
+  return h;
+}
+
+/* ── Information：分類卡片 → 分類內文章清單 → 文章內容，三層對齊手機版 ── */
+const CATEGORY_META = {
+  '歷史':     { icon:'ti-pyramid',            bg:'#F5DDD3', color:'#993C1D', desc:'古埃及朝代、重要事件與年表' },
+  '神話':     { icon:'ti-eye',                bg:'#E8E5FC', color:'#534AB7', desc:'埃及諸神、神話故事與象徵' },
+  '景點細節': { icon:'ti-map-pin',            bg:'#D4EDE4', color:'#0F6E56', desc:'票價、開放時間、注意事項' },
+  '吃食相關': { icon:'ti-tools-kitchen-2',    bg:'#FAE8C4', color:'#BA7517', desc:'埃及料理、推薦餐廳與飲食禁忌' },
+  '其他':     { icon:'ti-dots',               bg:'#EDE9E2', color:'#7A7268', desc:'簽證、貨幣、緊急聯絡、阿語常用語' },
+};
+
+let INFO_LOOKUP = {};
+
+function renderInfo(){
+  const grid = document.getElementById('infoCatGrid');
+  let html = '';
+  INFO_LOOKUP = {};
+
+  INFO_CATEGORY_ORDER.forEach(cat => {
+    const items = (INFO_DATA[cat] || []).slice().sort((a,b) => (a.order??9999) - (b.order??9999));
+    if(items.length === 0) return;
+    items.forEach(it => { INFO_LOOKUP[it.id] = { ...it, category: cat }; });
+
+    const meta = CATEGORY_META[cat] || { icon:'ti-info-circle', bg:'#EDE9E2', color:'#6B6054', desc:'' };
+    html += `<div class="info-cat-card" onclick="openInfoCategory('${escHtml(cat)}')">
+      <div class="icon-box" style="background:${meta.bg}"><i class="ti ${meta.icon}" style="color:${meta.color}"></i></div>
+      <div class="cat-body">
+        <div class="cat-name">${escHtml(cat)}</div>
+        <div class="cat-desc">${escHtml(meta.desc)}</div>
+      </div>
+      <i class="ti ti-chevron-right chev"></i>
+    </div>`;
+  });
+
+  grid.innerHTML = html || '<p style="color:var(--ink-faint)">尚無資訊內容</p>';
+}
+
+function openInfoCategory(cat){
+  document.getElementById('infoCatTitle').textContent = cat;
+  const items = (INFO_DATA[cat] || []).slice().sort((a,b) => (a.order??9999) - (b.order??9999));
+  const list = document.getElementById('infoCatList');
+  list.innerHTML = items.map(it => `
+    <div class="cat-list-row" onclick="openInfoArticle('${escHtml(it.id)}')">
+      ${it.emoji ? `<span class="emoji">${escHtml(it.emoji)}</span>` : ''}
+      <span class="a-title">${escHtml(it.title)}</span>
+      <i class="ti ti-chevron-right chev"></i>
+    </div>
+  `).join('') || '<p style="color:var(--ink-faint)">此分類尚無文章</p>';
+  document.getElementById('infoCatOverlay').classList.add('open');
+}
+function closeInfoCategory(){
+  document.getElementById('infoArticleOverlay').classList.remove('open');
+  document.getElementById('infoCatOverlay').classList.remove('open');
+}
+
+function openInfoArticle(id){
+  const it = INFO_LOOKUP[id];
+  if(!it) return;
+  const cat = it.category;
+
+  document.getElementById('infoArtCat').textContent = cat;
+  document.getElementById('infoArtTitle').textContent = it.title || '';
+
+  const body = document.getElementById('infoArtBody');
+  if(IMAGE_CATEGORIES.includes(cat)){
+    const slug = titleToSlug(it.title);
+    body.innerHTML = `<img src="public/info_maps/${escHtml(slug)}.jpg" alt="${escHtml(it.title)}"
+      loading="lazy" onerror="this.onerror=null;this.src='public/info_maps/${escHtml(slug)}.png';this.onerror=function(){this.remove()}">`
+      + renderSummaryLite(it.summary);
+  } else if(BLOCKS_CATEGORIES.includes(cat)){
+    body.innerHTML = renderBlockContent(it.content || '');
+  } else {
+    body.innerHTML = renderSummaryLite(it.summary) || '<p style="color:var(--ink-faint)">（摘要尚未填寫）</p>';
+  }
+
+  const notionBtn = document.getElementById('infoArtNotion');
+  if(it.notionUrl){ notionBtn.style.display=''; notionBtn.href = it.notionUrl; }
+  else notionBtn.style.display='none';
+
+  document.getElementById('infoArticleOverlay').classList.add('open');
+}
+function closeInfoArticle(){
+  document.getElementById('infoArticleOverlay').classList.remove('open');
+}
+
+/* ── 地圖 ── */
+function coordFromMapUrl(url){
+  if(!url) return null;
+  const m = url.match(/@(-?[\d.]+),(-?[\d.]+)/);
+  if(m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  const q = url.match(/[?&]q=(-?[\d.]+),(-?[\d.]+)/);
+  if(q) return { lat: parseFloat(q[1]), lng: parseFloat(q[2]) };
+  return null;
+}
+
+function renderMap(){
+  const el = document.getElementById('map-canvas');
+  if(!window.L) return;
+
+  const allItems = [];
+  for(let d=0; d<TOTAL_DAYS; d++){
+    (ITINERARY_DATA[String(d)] || []).forEach(it => { if(it.mapUrl) allItems.push(it); });
+  }
+  const valid = allItems.map(it => ({ ...it, coord: coordFromMapUrl(it.mapUrl) })).filter(it => it.coord);
+
+  if(valid.length === 0){
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink-faint);font-size:0.85rem">無可用座標資料</div>';
+    return;
+  }
+
+  const map = L.map(el, { attributionControl:false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom:18,
+    subdomains:'abcd',
+  }).addTo(map);
+
+  const legendSeen = {};
+  const bounds = [];
+  valid.forEach(it => {
+    const latlng = [it.coord.lat, it.coord.lng];
+    bounds.push(latlng);
+    const color = it.tagConfig?.textColor || '#6B6054';
+    const bg = it.tagConfig?.color || '#EDE9E2';
+    const icon = L.divIcon({
+      className:'', iconSize:[20,20], iconAnchor:[10,10], popupAnchor:[0,-12],
+      html:`<div style="background:${bg};border:2px solid #fff;width:20px;height:20px;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center">
+        <i class="ti ${it.tagConfig?.icon||'ti-map-pin'}" style="font-size:10px;color:${color}"></i>
+      </div>`,
+    });
+    L.marker(latlng, { icon }).addTo(map)
+      .bindPopup(`<span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;font-weight:500">${escHtml(it.title)}</span>`, {maxWidth:180});
+
+    const tag = it.primaryTag || 'default';
+    if(!legendSeen[tag]) legendSeen[tag] = { color: bg, count:0 };
+    legendSeen[tag].count++;
+  });
+
+  if(bounds.length === 1) map.setView(bounds[0], 13);
+  else map.fitBounds(bounds, { padding:[24,24] });
+
+  document.getElementById('mapLegend').innerHTML = Object.entries(legendSeen).map(([tag, cfg]) =>
+    `<div class="lg-item"><span class="lg-dot" style="background:${cfg.color}"></span>${escHtml(tag)}（${cfg.count}）</div>`
+  ).join('');
+}
+
+/* ── 捲動時反白 sticky nav 目前分頁 ── */
+function setupActiveNavTracking(){
+  const sections = Array.from(document.querySelectorAll('#map, .day-section, #info'));
+  const tabs = Array.from(document.querySelectorAll('.nav-tab'));
+  const tabFor = id => tabs.find(a => a.dataset.target === id);
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const tab = tabFor(entry.target.id);
+      if(!tab) return;
+      if(entry.isIntersecting){
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        tab.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+      }
+    });
+  }, { root:null, rootMargin:'-45% 0px -50% 0px', threshold:0 });
+
+  sections.forEach(sec => observer.observe(sec));
+}
+
+/* ── 點進去看詳情（對齊手機版 openDetail 的欄位：時間／年代／重點／背景資料／Notion） ── */
+let ITEM_LOOKUP = {};
+function buildItemLookup(){
+  ITEM_LOOKUP = {};
+  for(let d=0; d<TOTAL_DAYS; d++){
+    (ITINERARY_DATA[String(d)] || []).forEach(it => { ITEM_LOOKUP[it.id] = it; });
+  }
+}
+function hasDetail(it){ return !!(it.highlights || it.era || it.summary || it.notionUrl); }
+
+function openDetail(id){
+  const it = ITEM_LOOKUP[id];
+  if(!it) return;
+
+  const coverEl = document.getElementById('detailCover');
+  if(it.coverUrl){ coverEl.src = it.coverUrl; coverEl.alt = it.title || ''; coverEl.style.display=''; }
+  else coverEl.style.display='none';
+
+  document.getElementById('detailTag').textContent = it.primaryTag || '';
+  document.getElementById('detailTitle').textContent = it.title || '';
+  const enEl = document.getElementById('detailTitleEn');
+  enEl.textContent = it.titleEN || '';
+  enEl.style.display = it.titleEN ? '' : 'none';
+
+  let timeStr = '—';
+  if(it.hasTime && it.timeStart) timeStr = it.timeStart + (it.timeEnd ? '–'+it.timeEnd : '');
+  else if(it.dateOnly) timeStr = '全天';
+  document.getElementById('detailTime').textContent = timeStr;
+  document.getElementById('detailEra').textContent = it.era || '—';
+
+  const hlWrap = document.getElementById('detailHighlightsWrap');
+  if(it.highlights){ hlWrap.style.display=''; document.getElementById('detailHighlights').textContent = it.highlights; }
+  else hlWrap.style.display='none';
+
+  const bgWrap = document.getElementById('detailBgWrap');
+  if(it.summary){ bgWrap.style.display=''; document.getElementById('detailBg').innerHTML = renderSummaryLite(it.summary, it.title); }
+  else bgWrap.style.display='none';
+
+  const notionBtn = document.getElementById('detailNotion');
+  if(it.notionUrl){ notionBtn.style.display=''; notionBtn.href = it.notionUrl; }
+  else notionBtn.style.display='none';
+
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function closeDetail(){
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if(document.getElementById('infoArticleOverlay').classList.contains('open')) closeInfoArticle();
+  else if(document.getElementById('infoCatOverlay').classList.contains('open')) closeInfoCategory();
+  else closeDetail();
+});
+
+renderNav();
+buildItemLookup();
+renderDays();
+renderInfo();
+renderMap();
+setupActiveNavTracking();
+</script>
+</body>
+</html>

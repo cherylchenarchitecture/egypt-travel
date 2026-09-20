@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#4E8C6E">
+<title>Journey to Egypt</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Noto+Sans+TC:wght@400;500&family=M+PLUS+Rounded+1c:wght@400&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#2a2a28}
+
+/* ── App Shell ── */
+#app{
+  width:100%;
+  max-width:430px;
+  height:100%;
+  margin:0 auto;
+  background:#F7F3EC;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ── Header ── */
+.hdr{background:#4E8C6E;padding:env(safe-area-inset-top,0) 18px 0;flex-shrink:0}
+.hdr-inner{padding-top:max(env(safe-area-inset-top,0px),10px);padding-bottom:0}
+.trip-title{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-weight:400;
+  font-size:20px;color:#fff;
+  letter-spacing:0.06em;line-height:1.2
+}
+.trip-date{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-size:11px;
+  color:rgba(255,255,255,0.65);
+  margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.title-block{padding-bottom:8px}
+
+/* ── Day Rail ── */
+.rail-wrap{background:#4E8C6E;padding:0 0 9px;flex-shrink:0}
+.rail{
+  display:flex;overflow-x:auto;
+  padding:0 18px;gap:7px;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none
+}
+.rail::-webkit-scrollbar{display:none}
+.db{
+  flex-shrink:0;width:46px;height:52px;
+  border-radius:11px;border:none;cursor:pointer;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:5px 4px;gap:2px;
+  transition:background 0.15s;outline:none
+}
+.db.a{background:#fff}
+.db.i{background:rgba(255,255,255,0.15)}
+.b-num{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:500;font-size:17px;line-height:1;
+  letter-spacing:0.01em
+}
+.db.a .b-num{color:#4E8C6E}
+.db.i .b-num{color:#fff}
+.b-date{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-size:10px;
+  line-height:1;opacity:0.85
+}
+.db.a .b-date{color:#6B3E1E}
+.db.i .b-date{color:rgba(255,255,255,0.65)}
+
+/* ── Content Area ── */
+.content-area{flex:1;overflow:hidden;position:relative;min-height:0}
+.slides-wrap{display:flex;height:100%;transition:transform 0.32s cubic-bezier(0.4,0,0.2,1)}
+.slide{
+  flex-shrink:0;width:100%;height:100%;
+  overflow-y:auto;padding:13px 16px 14px;
+  scrollbar-width:none
+}
+.slide::-webkit-scrollbar{display:none}
+
+/* ── Day Heading ── */
+.day-heading{
+  font-size:11px;color:#6B6054;
+  font-family:'Noto Sans TC',sans-serif;
+  margin-bottom:11px;
+  display:flex;align-items:center;gap:5px
+}
+.day-heading i{font-size:12px;color:#4E8C6E}
+
+/* ── Timeline ── */
+.tl-item{display:flex;gap:9px}
+.tl-left{display:flex;flex-direction:column;align-items:center;width:28px;flex-shrink:0}
+.tl-dot{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0
+}
+.tl-dot.stay   {background:#D4EDE4}
+.tl-dot.pyramid{background:#F5DDD3}
+.tl-dot.temple {background:#E8E5FC}
+.tl-dot.meal   {background:#FAE8C4}
+.tl-dot.commute{background:#E4E2DC}
+.tl-dot.museum {background:#EDE9E2}
+.tl-dot.cruise {background:#D4EDE4}
+.tl-dot.other  {background:#EDE9E2}
+.tl-line{width:1px;flex:1;background:#D8D2C8;min-height:12px;margin:2px 0}
+.tl-body{flex:1;padding-bottom:9px}
+.tl-time{
+  font-size:10px;color:#6B3E1E;font-weight:500;
+  font-family:'Noto Sans TC',sans-serif;margin-bottom:3px
+}
+.tl-card{
+  background:#FEFCF8;border:0.5px solid #DDD7CC;
+  border-radius:10px;padding:8px 10px;cursor:pointer
+}
+.tl-card.no-detail{cursor:default}
+.tl-name{
+  font-size:12px;font-weight:500;color:#2E2A24;
+  font-family:'Noto Sans TC',sans-serif;
+  margin-bottom:1px;
+  display:flex;justify-content:space-between;align-items:flex-start
+}
+.tl-name i{color:#B5A898;font-size:13px;flex-shrink:0;margin-top:1px}
+.tl-note{font-size:10px;color:#8A8078;font-family:'Noto Sans TC',sans-serif}
+
+/* ── Section Heads ── */
+.section-head{
+  font-size:10px;font-weight:500;color:#8A8078;
+  letter-spacing:0.06em;text-transform:uppercase;
+  font-family:'Noto Sans TC',sans-serif;
+  margin:14px 0 8px;
+  display:flex;align-items:center;gap:5px
+}
+.section-head i{font-size:13px;color:#4E8C6E}
+
+/* ── Embed Map ── */
+.leaflet-map-wrap{
+  border-radius:11px;overflow:hidden;
+  border:0.5px solid #B8D4C4;
+  background:#E4EFE9;
+  width:100%;height:210px;
+  position:relative;
+}
+/* Fix Leaflet z-index inside stacked overlays */
+.leaflet-map-wrap .leaflet-pane{z-index:1}
+.leaflet-map-wrap .leaflet-top,
+.leaflet-map-wrap .leaflet-bottom{z-index:2}
+
+/* ── Map Placeholder ── */
+.map-placeholder{
+  background:#E4EFE9;border-radius:10px;height:84px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+  border:0.5px solid #B8D4C4
+}
+.map-placeholder span{font-size:11px;color:#3A7D62;font-family:'Noto Sans TC',sans-serif}
+.map-placeholder small{font-size:10px;color:#6B9E88;font-family:'Noto Sans TC',sans-serif}
+
+/* ── Map List (per-item links) ── */
+.map-list{display:flex;flex-direction:column;gap:5px}
+.map-list-item{background:#E4EFE9;border:0.5px solid #B8D4C4;border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11.5px;color:#2D5E4A;font-family:'Noto Sans TC',sans-serif;-webkit-tap-highlight-color:transparent}
+
+/* ── Spare Items ── */
+.spare-list{display:flex;flex-direction:column;gap:6px}
+.spare-item{
+  background:#FEFCF8;border:0.5px dashed #C8C0B4;
+  border-radius:10px;padding:8px 10px;
+  display:flex;align-items:center;gap:8px
+}
+.spare-item i{color:#B5A898;font-size:15px;flex-shrink:0}
+.spare-name{font-size:12px;font-weight:500;color:#5A5248;font-family:'Noto Sans TC',sans-serif}
+.spare-text{font-size:10px;color:#A09890;font-family:'Noto Sans TC',sans-serif}
+
+/* ── Progress Bar ── */
+.progress-bar{
+  flex-shrink:0;
+  background:rgba(247,243,236,0.96);
+  backdrop-filter:blur(6px);
+  padding:6px 0 7px;
+  display:flex;justify-content:center;align-items:center;gap:8px;
+  border-top:0.5px solid #DDD7CC
+}
+.dot-indicator{display:flex;gap:4px;align-items:center}
+.dot{width:4px;height:4px;border-radius:50%;background:#C8C0B4;transition:all 0.2s}
+.dot.a{background:#4E8C6E;width:14px;border-radius:3px}
+.day-counter{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-size:12px;
+  color:#8A8078;letter-spacing:0.04em
+}
+
+/* ── Bottom Nav ── */
+.bottom-nav{
+  flex-shrink:0;
+  height:calc(34px + env(safe-area-inset-bottom,0px));
+  background:#4E8C6E;
+  display:flex
+}
+.nav-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;background:none;border:none;outline:none;
+  padding-bottom:env(safe-area-inset-bottom,0px)
+}
+.nav-btn span{
+  font-size:11px;font-family:'Cormorant Garamond',serif;
+  font-style:italic;color:rgba(255,255,255,0.92);letter-spacing:0.04em
+}
+
+/* ── Loading State ── */
+.loading-slide{
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  height:100%;gap:10px;
+  color:#B5A898;font-size:11px;font-family:'Noto Sans TC',sans-serif
+}
+.loading-slide i{font-size:28px;color:#C8C0B4}
+.loading-dot{
+  display:inline-block;animation:blink 1.2s infinite;
+}
+.loading-dot:nth-child(2){animation-delay:0.2s}
+.loading-dot:nth-child(3){animation-delay:0.4s}
+@keyframes blink{0%,80%,100%{opacity:0}40%{opacity:1}}
+
+/* ── Error State ── */
+.error-slide{
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  height:100%;gap:8px;padding:20px;
+  color:#8A8078;font-size:11px;font-family:'Noto Sans TC',sans-serif;text-align:center
+}
+.error-slide i{font-size:26px;color:#C8C0B4;margin-bottom:4px}
+
+/* ── Overlay Base ── */
+.overlay{
+  display:none;
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:#F7F3EC;z-index:20;flex-direction:column
+}
+.overlay.open{display:flex}
+
+/* ── Overlay Header ── */
+.overlay-hdr{background:#4E8C6E;padding:14px 16px 14px;flex-shrink:0}
+.back-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:none!important;border:none!important;outline:none!important;
+  box-shadow:none!important;-webkit-appearance:none;appearance:none;
+  padding:0;margin:0 0 10px 0;cursor:pointer
+}
+.back-btn i{color:#FEFCF8;font-size:22px;display:block}
+.overlay-title-zh{
+  font-family:'M PLUS Rounded 1c',sans-serif;font-weight:400;
+  font-size:20px;color:#fff;line-height:1.25;letter-spacing:0.03em
+}
+.overlay-title-en{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:13.5px;color:rgba(255,255,255,0.88);
+  line-height:1.3;margin-top:3px;letter-spacing:0.04em;font-weight:600
+}
+.overlay-title-info{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:20px;color:#fff;line-height:1.2
+}
+.overlay-sub{
+  display:inline-block;
+  background:rgba(255,255,255,0.18);
+  color:rgba(255,255,255,0.88);
+  font-size:10px;padding:2px 8px;border-radius:10px;
+  margin-top:7px;font-family:'Noto Sans TC',sans-serif
+}
+
+/* ── Overlay Body ── */
+.overlay-body{flex:1;overflow-y:auto;padding:13px 16px;scrollbar-width:none}
+.overlay-body::-webkit-scrollbar{display:none}
+
+/* ── Detail Sections ── */
+.meta-row{display:flex;margin-bottom:13px}
+.meta-cell{flex:1;display:flex;flex-direction:column;gap:3px}
+.meta-label{
+  font-size:9px;color:#8A8078;
+  font-family:'Noto Sans TC',sans-serif;
+  letter-spacing:0.05em;text-transform:uppercase
+}
+.meta-value{font-size:14px;font-weight:400;color:#2E2A24;font-family:'Noto Sans TC',sans-serif}
+.meta-divider{width:0.5px;background:#DDD7CC;align-self:stretch;margin:2px 8px}
+.dsec-title{
+  font-size:10px;font-weight:500;color:#8A8078;
+  letter-spacing:0.06em;text-transform:uppercase;
+  font-family:'Noto Sans TC',sans-serif;
+  margin:14px 0 7px;
+  display:flex;align-items:center;gap:5px
+}
+.dsec-title i{font-size:13px;color:#4E8C6E}
+.highlights-box{
+  background:#E4EFE9;border-radius:10px;
+  padding:10px 12px;font-size:12px;color:#2D5E4A;
+  line-height:1.7;font-family:'Noto Sans TC',sans-serif;
+  border:0.5px solid #B8D4C4
+}
+.note-box{
+  background:#EDE9E2;border-radius:10px;
+  padding:10px 12px;font-size:12px;color:#5A5248;
+  line-height:1.7;font-family:'Noto Sans TC',sans-serif
+}
+.bg-box{
+  background:#FEFCF8;border:0.5px solid #DDD7CC;
+  border-radius:10px;padding:10px 12px;
+  font-size:12px;color:#3A3530;
+  line-height:1.78;font-family:'Noto Sans TC',sans-serif;
+  min-height:90px
+}
+.link-row{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 0;border-bottom:0.5px solid #DDD7CC;
+  font-size:12px;color:#3A7D62;
+  font-family:'Noto Sans TC',sans-serif
+}
+.link-row:last-child{border-bottom:none}
+.link-row i{font-size:14px;flex-shrink:0}
+
+/* ── Info Categories ── */
+.info-cat-list{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+.info-cat-row{
+  background:#FEFCF8;border:0.5px solid #DDD7CC;
+  border-radius:11px;padding:12px 14px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent
+}
+.info-cat-icon{
+  width:36px;height:36px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0
+}
+.info-cat-name{font-size:13px;font-weight:500;color:#2E2A24;font-family:'Noto Sans TC',sans-serif}
+.info-cat-desc{font-size:10px;color:#8A8078;font-family:'Noto Sans TC',sans-serif;margin-top:2px}
+.info-cat-row i.arrow{margin-left:auto;font-size:14px;color:#C8C0B4}
+
+/* ── Info Article List ── */
+.article-list{display:flex;flex-direction:column;gap:7px}
+.article-row{
+  background:#FEFCF8;border:0.5px solid #DDD7CC;border-radius:10px;
+  padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent
+}
+.article-emoji{font-size:18px;flex-shrink:0;width:24px;text-align:center}
+.article-title{font-size:12.5px;font-weight:500;color:#2E2A24;font-family:'Noto Sans TC',sans-serif;flex:1}
+.article-row i.arrow{font-size:13px;color:#C8C0B4;flex-shrink:0}
+
+/* ── Info Article Content ── */
+.article-content{font-size:12px;color:#3A3530;line-height:1.85;font-family:'Noto Sans TC',sans-serif}
+.article-content p{margin:0 0 10px}
+.article-content .ac-h1{font-size:15px;font-weight:500;color:#2E2A24;margin:16px 0 6px;font-family:'Noto Sans TC',sans-serif}
+.article-content .ac-h2{font-size:13px;font-weight:500;color:#2E2A24;margin:13px 0 5px;font-family:'Noto Sans TC',sans-serif}
+.article-content .ac-h3{font-size:12px;font-weight:500;color:#4E8C6E;margin:11px 0 4px;font-family:'Noto Sans TC',sans-serif}
+.article-content .ac-bullet{padding-left:2px;display:flex;gap:6px}
+.article-content .ac-bullet::before{content:'•';color:#4E8C6E;flex-shrink:0}
+
+/* ── Expenses ── */
+.exp-summary{background:#E4EFE9;border-radius:10px;padding:12px 14px;margin-bottom:14px;border:0.5px solid #B8D4C4}
+.exp-summary-label{font-size:10px;color:#5A8A72;font-family:'Noto Sans TC',sans-serif;letter-spacing:0.04em;text-transform:uppercase}
+.exp-summary-amount{font-size:22px;font-family:'Cormorant Garamond',serif;color:#2D5E4A;margin-top:3px;letter-spacing:0.02em}
+.exp-list{display:flex;flex-direction:column;gap:6px}
+.exp-row{
+  background:#FEFCF8;border:0.5px solid #DDD7CC;border-radius:10px;
+  padding:10px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent
+}
+.exp-date{font-size:10px;color:#8A8078;font-family:'Noto Sans TC',sans-serif;flex-shrink:0;width:34px}
+.exp-name{font-size:12px;font-weight:500;color:#2E2A24;font-family:'Noto Sans TC',sans-serif;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-price{font-size:11.5px;color:#6B3E1E;font-family:'Noto Sans TC',sans-serif;flex-shrink:0;text-align:right}
+.exp-row i.arrow{font-size:13px;color:#C8C0B4;flex-shrink:0}
+.exp-detail-price{font-size:28px;font-family:'Cormorant Garamond',serif;color:#2E2A24;margin-bottom:3px}
+.exp-detail-date{font-size:11px;color:#8A8078;font-family:'Noto Sans TC',sans-serif;margin-bottom:14px}
+
+/* ── Expense Table ── */
+.exp-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:0.5px solid #DDD7CC;margin-top:6px}
+.exp-table{width:100%;border-collapse:collapse;font-family:'Noto Sans TC',sans-serif}
+.exp-table thead th{
+  background:#4E8C6E;color:#fff;
+  font-size:10px;font-weight:500;letter-spacing:0.04em;
+  padding:8px 10px;text-align:left;white-space:nowrap
+}
+.exp-table thead th:last-child{text-align:center}
+.exp-table tbody tr{border-bottom:0.5px solid #EDE9E2}
+.exp-table tbody tr:last-child{border-bottom:none}
+.exp-table tbody tr:nth-child(even){background:#F9F6F0}
+.exp-table tbody td{font-size:11px;color:#3A3530;padding:8px 10px;vertical-align:top}
+.exp-table .td-date{color:#8A8078;white-space:nowrap;font-size:10px}
+.exp-table .td-name{color:#2E2A24;font-weight:500;max-width:110px}
+.exp-table .td-price{color:#6B3E1E;white-space:nowrap;text-align:right;font-size:11px}
+.exp-table .td-cur{color:#8A8078;font-size:10px;white-space:nowrap}
+.exp-table .td-link{text-align:center;width:36px}
+.exp-table .td-link a{color:#4E8C6E;display:inline-flex;align-items:center;justify-content:center}
+.exp-table .td-link a i{font-size:14px}
+.exp-currency-section{margin-bottom:12px}
+.exp-currency-label{
+  font-size:10px;font-weight:500;color:#5A8A72;
+  letter-spacing:0.06em;text-transform:uppercase;
+  font-family:'Noto Sans TC',sans-serif;
+  margin:14px 0 6px;
+  display:flex;align-items:center;gap:6px
+}
+.exp-currency-label i{font-size:13px;color:#4E8C6E}
+
+/* ── FAB ── */
+.fab-wrap{
+  position:absolute;bottom:14px;right:14px;
+  display:flex;flex-direction:column;align-items:flex-end;gap:7px;
+  z-index:10
+}
+.fab-menu{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.fab-menu-item{display:flex;align-items:center;gap:7px}
+.fab-menu-label{
+  background:#2E2A24;color:#F7F3EC;
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:15px;padding:7px 14px;border-radius:9px;
+  white-space:nowrap;cursor:pointer;
+  -webkit-tap-highlight-color:transparent
+}
+.fab-mini{
+  width:38px;height:38px;border-radius:50%;
+  background:#4E8C6E;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent
+}
+.fab-mini i{font-size:17px;color:#fff}
+.fab-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:#4E8C6E;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 10px rgba(78,140,110,0.4);
+  -webkit-tap-highlight-color:transparent;outline:none
+}
+.fab-btn i{font-size:18px;color:#fff}
+.fab-scrim{
+  display:none;position:absolute;top:0;left:0;right:0;bottom:0;
+  background:rgba(247,243,236,0.72);z-index:9;
+  backdrop-filter:blur(2px)
+}
+.fab-scrim.open{display:block}
+
+/* ── Rhythm bar ── */
+.rhythm-bar{
+  border-radius:9px;padding:7px 10px;
+  margin-bottom:10px;
+  font-size:11px;
+  line-height:1.6;font-family:'Noto Sans TC',sans-serif;
+  display:flex;align-items:flex-start;gap:7px;
+  border:0.5px solid transparent
+}
+.rhythm-bar i{font-size:13px;flex-shrink:0;margin-top:2px}
+
+/* ── Expense add form ── */
+.exp-add-form{
+  background:#FEFCF8;border:0.5px solid #B8D4C4;
+  border-radius:10px;padding:11px 13px;margin-top:8px
+}
+.exp-form-row{display:flex;gap:8px;margin-bottom:8px}
+.exp-form-field{display:flex;flex-direction:column;gap:3px;flex:1}
+.exp-form-label{font-size:10px;color:#8A8078;font-family:'Noto Sans TC',sans-serif}
+.exp-form-input{
+  background:#F7F3EC;border:0.5px solid #DDD7CC;
+  border-radius:7px;padding:5px 8px;
+  font-size:12px;color:#2E2A24;
+  font-family:'Noto Sans TC',sans-serif;
+  height:30px;outline:none;width:100%
+}
+.exp-form-input:focus{border-color:#4E8C6E}
+.exp-form-select{
+  background:#F7F3EC;border:0.5px solid #DDD7CC;
+  border-radius:7px;padding:4px 6px;
+  font-size:12px;color:#2E2A24;
+  font-family:'Noto Sans TC',sans-serif;
+  height:30px;outline:none;width:100%;appearance:none
+}
+.exp-form-submit{
+  width:100%;background:#4E8C6E;color:#fff;
+  border:none;border-radius:8px;padding:8px;
+  font-size:12px;font-family:'Cormorant Garamond',serif;
+  font-style:italic;letter-spacing:0.04em;
+  cursor:pointer;margin-top:2px;
+  -webkit-tap-highlight-color:transparent
+}
+.exp-section-head{
+  font-size:10px;font-weight:500;color:#5A8A72;
+  letter-spacing:0.06em;text-transform:uppercase;
+  font-family:'Noto Sans TC',sans-serif;
+  margin:14px 0 6px;
+  display:flex;align-items:center;justify-content:space-between
+}
+.exp-section-head-left{display:flex;align-items:center;gap:5px}
+.exp-section-head-left i{font-size:13px;color:#4E8C6E}
+.exp-add-toggle{
+  display:flex;align-items:center;gap:4px;
+  background:#4E8C6E;color:#fff;
+  font-size:10px;padding:3px 8px;border-radius:6px;
+  cursor:pointer;font-family:'Noto Sans TC',sans-serif;
+  -webkit-tap-highlight-color:transparent
+}
+.exp-del-btn{
+  background:none;border:none;cursor:pointer;
+  padding:0;display:inline-flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── HEADER ── -->
+  <div class="hdr">
+    <div class="hdr-inner">
+      <div class="title-block">
+        <div class="trip-title">Journey to Egypt</div>
+        <div class="trip-date">Oct 8 – Oct 19, 2026 &nbsp;·&nbsp; 12 Days &nbsp;·&nbsp; Taipei landing Oct 20</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DAY RAIL ── -->
+  <div class="rail-wrap">
+    <div class="rail" id="rail">
+      <button class="db a" onclick="goSlide(0)"><span class="b-num">D0</span><span class="b-date">/07</span></button>
+      <button class="db i" onclick="goSlide(1)"><span class="b-num">D1</span><span class="b-date">/08</span></button>
+      <button class="db i" onclick="goSlide(2)"><span class="b-num">D2</span><span class="b-date">/09</span></button>
+      <button class="db i" onclick="goSlide(3)"><span class="b-num">D3</span><span class="b-date">/10</span></button>
+      <button class="db i" onclick="goSlide(4)"><span class="b-num">D4</span><span class="b-date">/11</span></button>
+      <button class="db i" onclick="goSlide(5)"><span class="b-num">D5</span><span class="b-date">/12</span></button>
+      <button class="db i" onclick="goSlide(6)"><span class="b-num">D6</span><span class="b-date">/13</span></button>
+      <button class="db i" onclick="goSlide(7)"><span class="b-num">D7</span><span class="b-date">/14</span></button>
+      <button class="db i" onclick="goSlide(8)"><span class="b-num">D8</span><span class="b-date">/15</span></button>
+      <button class="db i" onclick="goSlide(9)"><span class="b-num">D9</span><span class="b-date">/16</span></button>
+      <button class="db i" onclick="goSlide(10)"><span class="b-num">D10</span><span class="b-date">/17</span></button>
+      <button class="db i" onclick="goSlide(11)"><span class="b-num">D11</span><span class="b-date">/18</span></button>
+      <button class="db i" onclick="goSlide(12)"><span class="b-num">D12</span><span class="b-date">/19</span></button>
+      <button class="db i" onclick="goSlide(13)"><span class="b-num">D13</span><span class="b-date">/20</span></button>
+    </div>
+  </div>
+
+  <!-- ── CONTENT AREA ── -->
+  <div class="content-area" id="contentArea">
+    <div class="slides-wrap" id="slidesWrap">
+      <div class="slide" id="slide-0"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-1"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-2"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-3"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-4"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-5"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-6"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-7"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-8"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-9"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-10"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-11"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-12"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+      <div class="slide" id="slide-13"><div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></span></div></div>
+    </div>
+  </div>
+
+  <!-- ── PROGRESS BAR ── -->
+  <div class="progress-bar">
+    <div class="dot-indicator" id="dotIndicator"></div>
+    <span class="day-counter" id="dayCounter">Day 1 / 12</span>
+    <button id="refreshBtn" onclick="refreshAllData()"
+      style="background:none;border:none;padding:4px 6px;cursor:pointer;
+             -webkit-tap-highlight-color:transparent;flex-shrink:0"
+      title="重新從 Notion 載入">
+      <i class="ti ti-refresh" style="font-size:14px;color:#4E8C6E"></i>
+    </button>
+  </div>
+
+  <!-- ── FAB ── -->
+  <div class="fab-scrim" id="fabScrim" onclick="closeFab()"></div>
+  <div class="fab-wrap" id="fabWrap">
+    <div class="fab-menu" id="fabMenu" style="display:none">
+      <div class="fab-menu-item" onclick="closeFab();openExpenses()">
+        <div class="fab-menu-label">Expenses</div>
+        <div class="fab-mini"><i class="ti ti-wallet"></i></div>
+      </div>
+      <div class="fab-menu-item" onclick="closeFab();openInfo()">
+        <div class="fab-menu-label">Information</div>
+        <div class="fab-mini"><i class="ti ti-books"></i></div>
+      </div>
+    </div>
+    <button class="fab-btn" id="fabBtn" onclick="toggleFab()">
+      <i class="ti ti-menu-2" id="fabIcon"></i>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════
+       DETAIL OVERLAY
+  ══════════════════════════════════ -->
+  <div class="overlay" id="detailScreen">
+    <div class="overlay-hdr">
+      <button class="back-btn" onclick="closeOverlay('detailScreen')">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div class="overlay-title-zh" id="dTitleZh"></div>
+      <div class="overlay-title-en" id="dTitleEn"></div>
+      <span class="overlay-sub" id="dTag"></span>
+    </div>
+    <div class="overlay-body" id="dBody"></div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       INFO OVERLAY
+  ══════════════════════════════════ -->
+  <div class="overlay" id="infoScreen">
+    <div class="overlay-hdr">
+      <button class="back-btn" onclick="closeOverlay('infoScreen')">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div class="overlay-title-info">Other Information</div>
+    </div>
+    <div class="overlay-body">
+      <div class="info-cat-list">
+        <div class="info-cat-row" onclick="openInfoCategory('歷史')">
+          <div class="info-cat-icon" style="background:#F5DDD3"><i class="ti ti-pyramid" style="font-size:18px;color:#993C1D"></i></div>
+          <div><div class="info-cat-name">歷史</div><div class="info-cat-desc">古埃及朝代、重要事件與年表</div></div>
+          <i class="ti ti-chevron-right arrow"></i>
+        </div>
+        <div class="info-cat-row" onclick="openInfoCategory('神話')">
+          <div class="info-cat-icon" style="background:#E8E5FC"><i class="ti ti-eye" style="font-size:18px;color:#534AB7"></i></div>
+          <div><div class="info-cat-name">神話</div><div class="info-cat-desc">埃及諸神、神話故事與象徵</div></div>
+          <i class="ti ti-chevron-right arrow"></i>
+        </div>
+        <div class="info-cat-row" onclick="openInfoCategory('景點細節')">
+          <div class="info-cat-icon" style="background:#D4EDE4"><i class="ti ti-map-pin" style="font-size:18px;color:#0F6E56"></i></div>
+          <div><div class="info-cat-name">景點細節</div><div class="info-cat-desc">票價、開放時間、注意事項</div></div>
+          <i class="ti ti-chevron-right arrow"></i>
+        </div>
+        <div class="info-cat-row" onclick="openInfoCategory('吃食相關')">
+          <div class="info-cat-icon" style="background:#FAE8C4"><i class="ti ti-tools-kitchen-2" style="font-size:18px;color:#BA7517"></i></div>
+          <div><div class="info-cat-name">吃食相關</div><div class="info-cat-desc">埃及料理、推薦餐廳與飲食禁忌</div></div>
+          <i class="ti ti-chevron-right arrow"></i>
+        </div>
+        <div class="info-cat-row" onclick="openInfoCategory('其他')">
+          <div class="info-cat-icon" style="background:#EDE9E2"><i class="ti ti-dots" style="font-size:18px;color:#7A7268"></i></div>
+          <div><div class="info-cat-name">其他</div><div class="info-cat-desc">簽證、貨幣、緊急聯絡、阿語常用語</div></div>
+          <i class="ti ti-chevron-right arrow"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       INFO CATEGORY OVERLAY (article list)
+  ══════════════════════════════════ -->
+  <div class="overlay" id="infoCatScreen">
+    <div class="overlay-hdr">
+      <button class="back-btn" onclick="closeOverlay('infoCatScreen')">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div class="overlay-title-zh" id="catTitle"></div>
+    </div>
+    <div class="overlay-body" id="catBody">
+      <div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中…</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       INFO ARTICLE OVERLAY (content)
+  ══════════════════════════════════ -->
+  <div class="overlay" id="infoArticleScreen">
+    <div class="overlay-hdr">
+      <button class="back-btn" onclick="closeOverlay('infoArticleScreen')">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div class="overlay-title-zh" id="articleTitle"></div>
+      <div class="overlay-title-en" id="articleSub" style="margin-top:4px"></div>
+    </div>
+    <div class="overlay-body" id="articleBody">
+      <div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中…</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       EXPENSES OVERLAY
+  ══════════════════════════════════ -->
+  <div class="overlay" id="expensesScreen">
+    <div class="overlay-hdr">
+      <button class="back-btn" onclick="closeOverlay('expensesScreen')">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div class="overlay-title-zh">旅費小記</div>
+    </div>
+    <div class="overlay-body" id="expBody">
+      <div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中…</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       EXPENSE DETAIL OVERLAY
+  ══════════════════════════════════ -->
+  <div class="overlay" id="expDetailScreen">
+    <div class="overlay-hdr">
+      <button class="back-btn" onclick="closeOverlay('expDetailScreen')">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div class="overlay-title-zh" id="expDetailTitle"></div>
+    </div>
+    <div class="overlay-body" id="expDetailBody"></div>
+  </div>
+
+</div><!-- /#app -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════ */
+const TOTAL_DAYS = 14;  /* D0–D13, slot 0–13, 1:1 mapping */
+
+/* ── OpenStreetMap / Leaflet ──
+   地圖使用 Leaflet + OpenStreetMap，完全免費不需 API Key。
+   景點座標直接從 Notion mapUrl（Google Maps 格式）解析 @lat,lng，
+   不需要任何外部 API 請求，即時可用。 */
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let cur = 0;
+let touchStartX = 0;
+let touchStartY = 0;
+let slots = Array.from({length: TOTAL_DAYS}, () => []);  /* slot 0–13 */
+let detailCache = {};     /* item.id → item */
+const leafletMaps = {};   /* dayIdx → Leaflet map instance */
+
+/* ═══════════════════════════════════════════════
+   STATUS BAR CLOCK
+═══════════════════════════════════════════════ */
+/* status bar clock removed */
+
+/* ═══════════════════════════════════════════════
+   DOT INDICATOR
+═══════════════════════════════════════════════ */
+function buildDots(){
+  const el = document.getElementById('dotIndicator');
+  if(!el) return;
+  el.innerHTML = '';
+  for(let i=0;i<TOTAL_DAYS;i++){
+    const d = document.createElement('div');
+    d.className = 'dot'+(i===cur?' a':'');
+    d.addEventListener('click', ()=>goSlide(i));
+    el.appendChild(d);
+  }
+}
+function updateDots(){
+  document.querySelectorAll('#dotIndicator .dot')
+    .forEach((d,i)=>{ d.className='dot'+(i===cur?' a':''); });
+}
+
+/* ═══════════════════════════════════════════════
+   SLIDE NAVIGATION
+═══════════════════════════════════════════════ */
+function goSlide(n){
+  cur = Math.max(0, Math.min(TOTAL_DAYS-1, n));
+  document.getElementById('slidesWrap').style.transform =
+    'translateX(-'+(cur*100)+'%)';
+  document.getElementById('dayCounter').textContent =
+    'Day '+cur+' / '+(TOTAL_DAYS-1);
+  updateDots();
+  document.querySelectorAll('.db').forEach((b,i)=>
+    b.className='db '+(i===cur?'a':'i'));
+  const btn = document.getElementById('rail').querySelectorAll('.db')[cur];
+  if(btn) btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  renderDay(cur);
+  /* Leaflet invalidateSize: 等 CSS transition 結束後重算地圖容器 */
+  setTimeout(() => {
+    if(leafletMaps[cur]) leafletMaps[cur].invalidateSize();
+  }, 350);
+}
+
+/* ═══════════════════════════════════════════════
+   TOUCH SWIPE
+═══════════════════════════════════════════════ */
+const ca = document.getElementById('contentArea');
+ca.addEventListener('touchstart', e=>{
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+},{passive:true});
+ca.addEventListener('touchend', e=>{
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  /* 只在水平滑動明顯大於垂直時才切換天（避免斜滑誤觸） */
+  if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) goSlide(cur+(dx<0?1:-1));
+},{passive:true});
+
+/* ═══════════════════════════════════════════════
+   FETCH ALL ITINERARY DATA
+═══════════════════════════════════════════════ */
+async function fetchAllData(){
+  try{
+    const res = await fetch('/api/itinerary');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    processData(json);
+  } catch(err){
+    console.error('Fetch error:', err);
+    showGlobalError(err.message);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   PROCESS API DATA
+   json: { "0": [item,...], ..., "13": [item,...] }
+   dayNum 直接對應 slot（1:1，無合併）
+═══════════════════════════════════════════════ */
+function processData(json){
+  slots = Array.from({length: TOTAL_DAYS}, () => []);
+  detailCache = {};
+
+  Object.keys(json).forEach(key => {
+    const dayNum = parseInt(key, 10);
+    const items  = json[key];
+    if(!Array.isArray(items)) return;
+    if(dayNum < 0 || dayNum >= TOTAL_DAYS) return;
+
+    items.forEach(item => {
+      detailCache[item.id] = item;
+      slots[dayNum].push(item);
+    });
+  });
+
+  /* Sort: hasTime 優先（依 timeStart），dateOnly/無時間排後 */
+  slots.forEach(slotItems => {
+    slotItems.sort((a, b) => {
+      const aT = a.hasTime && a.timeStart;
+      const bT = b.hasTime && b.timeStart;
+      if(aT && bT) return a.timeStart.localeCompare(b.timeStart);
+      if(aT) return -1;
+      if(bT) return 1;
+      return 0;
+    });
+  });
+
+  renderDay(cur);
+}
+
+/* ═══════════════════════════════════════════════
+   PARSE DAY HEADING
+   dayLabel e.g. "Day 1 (10/08 Thu.)"
+   → "Thursday · Cairo"  from item.dayLabel weekday + location tag
+   
+   We extract the weekday abbrev from dayLabel and expand it,
+   then use the item's location from tagConfig or a fallback.
+   Since server doesn't output location, we derive it from dayNum.
+═══════════════════════════════════════════════ */
+const WEEKDAY_MAP = {
+  'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday',
+  'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday'
+};
+/* dayNum 0–13 → 城市/地區 */
+const DAY_LOCATION = [
+  'Taipei',                  /* 0  – 出發日 */
+  'Cairo',                   /* 1  – 10/08 */
+  'Saqqara & Dahshur',       /* 2  – 10/09 */
+  'Giza',                    /* 3  – 10/10 */
+  'Black and White Deserts', /* 4  – 10/11 */
+  'Luxor',                   /* 5  – 10/12 */
+  'Luxor',                   /* 6  – 10/13 */
+  'Aswan',                   /* 7  – 10/14 */
+  'Aswan',                   /* 8  – 10/15 */
+  'Abu Simbel',              /* 9  – 10/16 */
+  'Alexandria',            /* 10 – 10/17 */
+  'Alexandria',            /* 11 – 10/18 */
+  'Cairo',                   /* 12 – 10/19 */
+  'Taipei',                  /* 13 – 10/20 */
+];
+
+function parseDayHeading(dayLabel, dayNum){
+  /* Extract weekday abbrev from "(10/08 Thu.)" */
+  const m = dayLabel.match(/\([\d/]+\s+(\w{3})\.\)/);
+  const abbr = m ? m[1] : '';
+  const weekday = WEEKDAY_MAP[abbr] || abbr;
+  const location = DAY_LOCATION[dayNum] || '';
+  if(weekday && location) return weekday + ' · ' + location;
+  if(weekday) return weekday;
+  return dayLabel;
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER A DAY SLIDE
+═══════════════════════════════════════════════ */
+function renderDay(idx){
+  const slide = document.getElementById('slide-'+idx);
+  if(!slide) return;
+
+  const items = slots[idx] || [];
+
+  if(items.length === 0){
+    slide.innerHTML = `
+      <div class="error-slide">
+        <i class="ti ti-calendar-off"></i>
+        <span>本日無行程資料</span>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+
+  /* Day heading: "Thursday · Cairo" */
+  const headLabel = items[0].dayLabel || '';
+  const heading   = parseDayHeading(headLabel, idx);
+  html += `<div class="day-heading"><i class="ti ti-map-pin"></i>${escHtml(heading)}</div>`;
+
+  /* Rhythm bar — shown only when Rhythm field is non-empty */
+  const rhythm = items[0].rhythm || '';
+  if(rhythm){
+    const rLower = rhythm;
+    let rBg = '#EDE9E2', rBorder = '#D4CEC6', rColor = '#6B6054', rIcon = 'ti-info-circle';
+    if(/體力|早起/.test(rLower)){ rBg='#F5DDD3'; rBorder='#E8C4B4'; rColor='#8A3518'; rIcon='ti-flame'; }
+    else if(/資訊|密集/.test(rLower)){ rBg='#EAE8F5'; rBorder='#C8C4EC'; rColor='#4A42A8'; rIcon='ti-brain'; }
+    else if(/移動/.test(rLower)){ rBg='#E8EAE6'; rBorder='#CCC8C0'; rColor='#4A5E52'; rIcon='ti-car'; }
+    else if(/輕鬆|緩衝/.test(rLower)){ rBg='#D4EDE4'; rBorder='#B8D4C4'; rColor='#0F6E56'; rIcon='ti-leaf'; }
+    html += `<div class="rhythm-bar" style="background:${rBg};border-color:${rBorder}">
+      <i class="ti ${rIcon}" style="color:${rColor}"></i>
+      <span style="color:${rColor}">${escHtml(rhythm)}</span>
+    </div>`;
+  }
+
+  /* Timeline items */
+  items.forEach((item, i) => {
+    const isLast    = (i === items.length - 1);
+    const hasDetail = !!(item.highlights || item.era || item.notionUrl);
+    const icon      = item.tagConfig?.icon      || 'ti-map-pin';
+    const dotBg     = item.tagConfig?.color     || '#EDE9E2';
+    const iconColor = item.tagConfig?.textColor || '#8A8078';
+
+    let timeHtml = '';
+    if(item.hasTime && item.timeStart){
+      const end = item.timeEnd ? `–${item.timeEnd}` : '';
+      timeHtml = `<div class="tl-time">${item.timeStart}${end}</div>`;
+    } else if(item.dateOnly){
+      timeHtml = `<div class="tl-time" style="color:#8A8078">全天</div>`;
+    }
+
+    html += `
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot" style="background:${dotBg}">
+          <i class="ti ${escHtml(icon)}" style="font-size:11px;color:${iconColor}"></i>
+        </div>
+        ${isLast ? '' : '<div class="tl-line"></div>'}
+      </div>
+      <div class="tl-body">
+        ${timeHtml}
+        <div class="tl-card${hasDetail ? '' : ' no-detail'}"
+          ${hasDetail ? `onclick="openDetail('${escHtml(item.id)}')"` : ''}>
+          <div class="tl-name">
+            ${escHtml(item.title)}
+            ${hasDetail ? '<i class="ti ti-chevron-right"></i>' : ''}
+          </div>
+          ${item.highlights
+            ? `<div class="tl-note">${escHtml(truncate(item.highlights, 55))}</div>`
+            : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  /* OpenStreetMap / Leaflet 地圖 ── 用有 mapUrl 的景點 */
+  const mapItems = items.filter(it => it.mapUrl);
+  html += `<div class="section-head"><i class="ti ti-map-2"></i>當日路線</div>`;
+  if(mapItems.length > 0){
+    /* 地圖容器（id 包含 dayIdx 供 Leaflet 初始化） */
+    html += `<div class="leaflet-map-wrap" id="map-${idx}"></div>`;
+    /* 景點清單連結 */
+    html += `<div class="map-list" style="margin-top:7px">`;
+    mapItems.forEach(it => {
+      html += `<div class="map-list-item" onclick="window.open('${escHtml(it.mapUrl)}','_blank')">
+        <i class="ti ti-map-pin" style="color:#4E8C6E;font-size:13px;flex-shrink:0"></i>
+        <span>${escHtml(it.title)}</span>
+        <i class="ti ti-external-link" style="color:#B5A898;font-size:12px;margin-left:auto;flex-shrink:0"></i>
+      </div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="map-placeholder">
+      <i class="ti ti-map" style="font-size:22px;color:#4E8C6E"></i>
+      <span>尚無地圖連結</span>
+      <small>${items.length} 個景點</small>
+    </div>`;
+  }
+
+  html += `<div style="height:20px"></div>`;
+  slide.innerHTML = html;
+
+  /* 地圖初始化（非同步，注入 HTML 後才建立 Leaflet） */
+  if(mapItems.length > 0) initLeafletMap(idx, mapItems);
+}
+
+/* ═══════════════════════════════════════════════
+   LEAFLET MAP — COORD EXTRACTION + INIT
+   從 Google Maps URL 的 @lat,lng 部分直接解析座標，
+   不需要任何 API Key 或外部查詢，即時、離線可用。
+   格式：https://www.google.com/maps/place/.../@lat,lng,zoom z/...
+═══════════════════════════════════════════════ */
+
+/* 從 Google Maps URL 解析 {lat, lng}，失敗回傳 null */
+function coordFromMapUrl(url){
+  if(!url) return null;
+  /* 格式：@30.0287503,31.2571395,17z */
+  const m = url.match(/@(-?[\d.]+),(-?[\d.]+)/);
+  if(m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  /* 備用格式：?q=lat,lng */
+  const q = url.match(/[?&]q=(-?[\d.]+),(-?[\d.]+)/);
+  if(q) return { lat: parseFloat(q[1]), lng: parseFloat(q[2]) };
+  return null;
+}
+
+/* 初始化單天的 Leaflet 地圖 */
+async function initLeafletMap(dayIdx, mapItems){
+  /* 等 DOM 注入後再取元素 */
+  await new Promise(r => requestAnimationFrame(r));
+  const el = document.getElementById('map-'+dayIdx);
+  if(!el || !window.L) return;
+
+  /* 若已初始化過（重複切換天），先清除 */
+  if(leafletMaps[dayIdx]){
+    leafletMaps[dayIdx].remove();
+    delete leafletMaps[dayIdx];
+  }
+
+  /* 從 mapUrl 直接解析座標，不需網路請求 */
+  const valid = mapItems
+    .map(it => ({ ...it, coord: coordFromMapUrl(it.mapUrl) }))
+    .filter(it => it.coord);
+
+  if(valid.length === 0){
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;color:#8A8078;font-family:Noto Sans TC,sans-serif">無法取得景點座標</div>';
+    return;
+  }
+
+  /* 建立地圖；阻止地圖觸控事件冒泡到外層 swipe 偵測，避免地圖操作觸發換天 */
+  const map = L.map(el, {
+    zoomControl: true,
+    attributionControl: false,
+    touchZoom: true,
+    dragging: true,
+    tap: false,
+  });
+  leafletMaps[dayIdx] = map;
+
+  /* 阻止地圖內的 touch/click 冒泡，防止觸碰地圖時觸發換天 */
+  el.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+  el.addEventListener('touchend',   e => e.stopPropagation(), { passive: true });
+  el.addEventListener('click',      e => e.stopPropagation());
+
+  /* OSM tile */
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+  }).addTo(map);
+
+  /* 自訂 marker icon（用 SVG 點，無外部圖檔依賴） */
+  const makeIcon = (n) => L.divIcon({
+    className: '',
+    html: `<div style="
+      background:#4E8C6E;color:#fff;
+      width:22px;height:22px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:10px;font-weight:700;font-family:sans-serif;
+      border:2px solid #fff;
+      box-shadow:0 1px 4px rgba(0,0,0,0.35)">
+      ${n}
+    </div>`,
+    iconSize:[22,22], iconAnchor:[11,11], popupAnchor:[0,-13]
+  });
+
+  /* 加入 markers */
+  const bounds = [];
+  valid.forEach((it, i) => {
+    const latlng = [it.coord.lat, it.coord.lng];
+    bounds.push(latlng);
+    L.marker(latlng, { icon: makeIcon(i+1) })
+      .addTo(map)
+      .bindPopup(`<span style="font-size:12px;font-family:Noto Sans TC,sans-serif;font-weight:500">${it.title}</span>`, { maxWidth:160 });
+  });
+
+  /* 加折線連接路線 */
+  if(valid.length > 1){
+    L.polyline(bounds, { color:'#4E8C6E', weight:2, opacity:0.7, dashArray:'5,5' }).addTo(map);
+  }
+
+  /* fit bounds */
+  if(bounds.length === 1){
+    map.setView(bounds[0], 14);
+  } else {
+    map.fitBounds(bounds, { padding:[16,16] });
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   OPEN DETAIL OVERLAY
+   - 立即顯示已有資料（時間、年代、重點）
+   - 懶載入 page blocks 取得背景資料
+═══════════════════════════════════════════════ */
+async function openDetail(pageId){
+  const d = detailCache[pageId];
+  if(!d) return;
+
+  /* Header */
+  document.getElementById('dTitleZh').textContent = d.title || '';
+  document.getElementById('dTitleEn').textContent = d.titleEN || '';
+  document.getElementById('dTag').textContent     = d.primaryTag || '';
+
+  /* Time string */
+  let timeStr = '—';
+  if(d.hasTime && d.timeStart){
+    timeStr = d.timeStart + (d.timeEnd ? '–'+d.timeEnd : '');
+  } else if(d.dateOnly){
+    timeStr = '全天';
+  }
+
+  /* Era string */
+  const eraStr = d.era ? d.era : '—';
+
+  let h = `<div class="meta-row">
+    <div class="meta-cell">
+      <div class="meta-label">時間</div>
+      <div class="meta-value">${escHtml(timeStr)}</div>
+    </div>
+    <div class="meta-divider"></div>
+    <div class="meta-cell">
+      <div class="meta-label">年代</div>
+      <div class="meta-value">${escHtml(eraStr)}</div>
+    </div>
+  </div>`;
+
+  /* 重點 */
+  if(d.highlights){
+    h += `<div class="dsec-title"><i class="ti ti-star"></i>重點</div>
+    <div class="highlights-box">${escHtml(d.highlights)}</div>`;
+  }
+
+  /* 背景資料 — 直接顯示 summary */
+  h += `<div class="dsec-title"><i class="ti ti-book"></i>背景資料</div>`;
+  if(d.summary){
+    h += `<div class="bg-box">${renderSummary(d.summary, d.title)}</div>`;
+  } else {
+    h += `<div class="bg-box"><span style="color:#B5A898;font-size:11px;font-family:'Noto Sans TC',sans-serif">（摘要尚未填寫）</span></div>`;
+  }
+
+  /* Notion 連結按鈕 */
+  if(d.notionUrl){
+    h += `<div style="margin-top:16px">
+      <a href="${escHtml(d.notionUrl)}" target="_blank" rel="noopener"
+         style="display:flex;align-items:center;justify-content:center;gap:8px;
+                background:#2E2A24;border-radius:10px;padding:12px;
+                text-decoration:none;-webkit-tap-highlight-color:transparent">
+        <i class="ti ti-notebook" style="font-size:15px;color:#F7F3EC"></i>
+        <span style="font-size:12px;color:#F7F3EC;font-family:'Noto Sans TC',sans-serif;font-weight:500">在 Notion 查看完整內容</span>
+        <i class="ti ti-external-link" style="font-size:13px;color:#8A8078;margin-left:auto"></i>
+      </a>
+    </div>`;
+  }
+
+  h += `<div style="height:24px"></div>`;
+  document.getElementById('dBody').innerHTML = h;
+  document.getElementById('detailScreen').className = 'overlay open';
+  document.getElementById('dBody').scrollTop = 0;
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER SUMMARY (條列式摘要顯示)
+   支援：• 條列、## 標題、一般段落
+   特殊：整行為 "(map)" 時顯示 /maps/<slug>.jpg
+         slug = title 轉小寫、空格→底線、去除特殊字元
+═══════════════════════════════════════════════ */
+function titleToSlug(title){
+  return (title||'').trim().replace(/[\/\\:*?"<>|]+/g,'_');
+}
+function renderSummary(text, itemTitle){
+  if(!text) return '';
+  const lines = text.split('\n');
+  let h = '';
+  lines.forEach(line => {
+    const t = line.trim();
+    if(!t) return;
+    if(t === '(map)'){
+      const slug = titleToSlug(itemTitle||'');
+      const srcJpg = '/maps/'+slug+'.jpg';
+      const srcPng = '/maps/'+slug+'.png';
+      h += `<div style="margin:8px 0;border-radius:10px;overflow:hidden;border:0.5px solid #DDD7CC">
+        <img src="${srcJpg}" alt="${escHtml(itemTitle||'map')}" data-slug="${escHtml(slug)}"
+          style="width:100%;display:block;object-fit:cover" loading="lazy"
+          onerror="this.src='${escHtml(srcPng)}';this.onerror=function(){this.parentElement.style.cssText='padding:14px;text-align:center';this.parentElement.innerHTML='<span style=font-size:10.5px;color:#B5A898>地圖圖片尚未上傳</span>'}">
+      </div>`;
+    } else if(line.startsWith('## ')){
+      h += `<div style="font-size:12px;font-weight:500;color:#2E2A24;margin:10px 0 4px;font-family:'Noto Sans TC',sans-serif">${escHtml(line.slice(3))}</div>`;
+    } else if(line.startsWith('• ') || line.startsWith('- ')){
+      h += `<div style="display:flex;gap:6px;font-size:11.5px;color:#3A3530;margin:4px 0;line-height:1.7;font-family:'Noto Sans TC',sans-serif"><span style="color:#4E8C6E;flex-shrink:0;margin-top:1px">•</span><span>${escHtml(line.slice(2))}</span></div>`;
+    } else {
+      h += `<p style="margin:0 0 7px;font-size:11.5px;color:#3A3530;line-height:1.75;font-family:'Noto Sans TC',sans-serif">${escHtml(line)}</p>`;
+    }
+  });
+  return h;
+}
+
+/* ═══════════════════════════════════════════════
+   FAB
+═══════════════════════════════════════════════ */
+function toggleFab(){
+  const menu  = document.getElementById('fabMenu');
+  const scrim = document.getElementById('fabScrim');
+  const icon  = document.getElementById('fabIcon');
+  const open  = menu.style.display === 'flex';
+  if(open){
+    menu.style.display  = 'none';
+    scrim.className     = 'fab-scrim';
+    icon.className      = 'ti ti-menu-2';
+  } else {
+    menu.style.display  = 'flex';
+    scrim.className     = 'fab-scrim open';
+    icon.className      = 'ti ti-x';
+  }
+}
+function closeFab(){
+  document.getElementById('fabMenu').style.display = 'none';
+  document.getElementById('fabScrim').className    = 'fab-scrim';
+  document.getElementById('fabIcon').className     = 'ti ti-menu-2';
+}
+
+/* ═══════════════════════════════════════════════
+   OPEN / CLOSE OVERLAYS
+═══════════════════════════════════════════════ */
+function openInfo(){
+  document.getElementById('infoScreen').className = 'overlay open';
+}
+function closeOverlay(id){
+  document.getElementById(id).className = 'overlay';
+}
+
+/* Swipe-down header to close */
+['detailScreen','infoScreen','infoCatScreen','infoArticleScreen','expensesScreen','expDetailScreen'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(!el) return;
+  let oty = 0;
+  el.addEventListener('touchstart', e=>{ oty = e.touches[0].clientY; },{passive:true});
+  el.addEventListener('touchend', e=>{
+    const dy = e.changedTouches[0].clientY - oty;
+    if(dy > 60 && oty < 120) closeOverlay(id);
+  },{passive:true});
+});
+
+/* ═══════════════════════════════════════════════
+   INFORMATION — Category → Article list
+═══════════════════════════════════════════════ */
+const infoCatCache = {};  /* category → [items] */
+const infoArticleCache = {};  /* id → content string */
+
+async function openInfoCategory(category){
+  document.getElementById('catTitle').textContent = category;
+  document.getElementById('catBody').innerHTML =
+    '<div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中…</span></div>';
+  document.getElementById('infoCatScreen').className = 'overlay open';
+
+  /* Cache hit */
+  if(infoCatCache[category]){
+    renderArticleList(infoCatCache[category]);
+    return;
+  }
+
+  try{
+    const res = await fetch('/api/information?category='+encodeURIComponent(category));
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const items = await res.json();
+    infoCatCache[category] = items;
+    renderArticleList(items);
+  } catch(err){
+    document.getElementById('catBody').innerHTML =
+      `<div class="error-slide"><i class="ti ti-wifi-off"></i><span>載入失敗</span><span style="font-size:10px;color:#C8C0B4">${escHtml(err.message)}</span></div>`;
+  }
+}
+
+function renderArticleList(items){
+  const body = document.getElementById('catBody');
+  if(!items || items.length === 0){
+    body.innerHTML = '<p style="font-size:12px;color:#8A8078;font-family:\'Noto Sans TC\',sans-serif;padding:8px 0">此分類尚無文章</p>';
+    return;
+  }
+  let h = '<div class="article-list">';
+  items.forEach(item => {
+    h += `<div class="article-row" onclick="openInfoArticle('${escHtml(item.id)}','${escHtml(item.title)}')">
+      <div class="article-emoji">${item.emoji ? escHtml(item.emoji) : '<i class="ti ti-file-text" style="font-size:16px;color:#B5A898"></i>'}</div>
+      <div class="article-title">${escHtml(item.title)}</div>
+      <i class="ti ti-chevron-right arrow"></i>
+    </div>`;
+  });
+  h += '</div>';
+  body.innerHTML = h;
+}
+
+/* ── Open a single info article ── */
+/* 依 category 決定呈現方式：
+   神話      → 圖片（/info-maps/<slug>.jpg）+ summary
+   景點細節  → Notion blocks 內文（content），不顯示 summary
+   其他      → Notion blocks 內文（content），不顯示 summary
+   其餘      → summary（原有行為）                              */
+const BLOCKS_CATEGORIES = ['景點細節', '其他', '吃食相關'];
+const IMAGE_CATEGORIES  = ['神話'];
+
+async function openInfoArticle(pageId, title){
+  document.getElementById('articleTitle').textContent = title;
+  document.getElementById('articleSub').textContent   = '';
+  document.getElementById('articleBody').innerHTML    =
+    '<div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中…</span></div>';
+  document.getElementById('infoArticleScreen').className = 'overlay open';
+  document.getElementById('articleBody').scrollTop = 0;
+
+  /* Try to get category from cache first */
+  let cachedItem = null;
+  Object.values(infoCatCache).forEach(items => {
+    const found = items.find(it => it.id === pageId);
+    if(found) cachedItem = found;
+  });
+
+  const category = cachedItem?.category || '';
+  const needsBlocks = BLOCKS_CATEGORIES.includes(category) || IMAGE_CATEGORIES.includes(category);
+
+  if(cachedItem && !needsBlocks){
+    /* Summary-only categories: use cache, no extra fetch */
+    if(category) document.getElementById('articleSub').textContent = category;
+    renderInfoArticle(cachedItem.summary || '', cachedItem.notionUrl || '', cachedItem.title || '', category);
+    return;
+  }
+
+  /* Always fetch full page (blocks) for 神話 / 景點細節 / 其他, or no cache */
+  try{
+    const res = await fetch('/api/info-page?id='+encodeURIComponent(pageId));
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const cat  = data.category || category;
+    if(cat) document.getElementById('articleSub').textContent = cat;
+    renderInfoArticle(data.summary || '', data.notionUrl || '', data.title || '', cat, data.content || '');
+  } catch(err){
+    document.getElementById('articleBody').innerHTML =
+      `<div class="error-slide"><i class="ti ti-wifi-off"></i><span>載入失敗</span><span style="font-size:10px;color:#C8C0B4">${escHtml(err.message)}</span></div>`;
+  }
+}
+
+function notionBtn(notionUrl){
+  if(!notionUrl) return '';
+  return `<div style="margin-top:16px">
+    <a href="${escHtml(notionUrl)}" target="_blank" rel="noopener"
+       style="display:flex;align-items:center;justify-content:center;gap:8px;
+              background:#2E2A24;border-radius:10px;padding:12px;
+              text-decoration:none;-webkit-tap-highlight-color:transparent">
+      <i class="ti ti-notebook" style="font-size:15px;color:#F7F3EC"></i>
+      <span style="font-size:12px;color:#F7F3EC;font-family:'Noto Sans TC',sans-serif;font-weight:500">在 Notion 查看完整內容</span>
+      <i class="ti ti-external-link" style="font-size:13px;color:#8A8078;margin-left:auto"></i>
+    </a>
+  </div>`;
+}
+
+/* renderInfoArticle
+   category 決定模式：
+   • IMAGE_CATEGORIES（神話）  → 頂部圖片 + summary
+   • BLOCKS_CATEGORIES（景點細節/其他）→ 直接顯示 content（blocks 內文）
+   • 其餘                      → summary                                   */
+function renderInfoArticle(summary, notionUrl, itemTitle, category='', content=''){
+  const body = document.getElementById('articleBody');
+  let h = '';
+
+  if(IMAGE_CATEGORIES.includes(category)){
+    /* 神話：圖片欄位（手動上傳）+ summary */
+    const slug = titleToSlug(itemTitle);
+    const srcJpg = '/info_maps/'+slug+'.jpg';
+    const srcPng = '/info_maps/'+slug+'.png';
+    h += `<div style="margin:0 0 12px;border-radius:10px;overflow:hidden;border:0.5px solid #DDD7CC">
+      <img src="${escHtml(srcJpg)}" alt="${escHtml(itemTitle)}" data-slug="${escHtml(slug)}"
+        style="width:100%;display:block;max-height:200px;object-fit:cover" loading="lazy"
+        onerror="this.src='${escHtml(srcPng)}';this.onerror=function(){this.parentElement.style.cssText='padding:12px;text-align:center';this.parentElement.innerHTML='<span style=font-size:10px;color:#B5A898>圖片尚未上傳</span>'}">
+    </div>`;
+    h += '<div class="article-content">';
+    h += summary ? renderSummary(summary, itemTitle)
+      : `<p style="font-size:11.5px;color:#B5A898;font-family:'Noto Sans TC',sans-serif">（摘要尚未填寫）</p>`;
+    h += '</div>';
+    h += notionBtn(notionUrl);
+
+  } else if(BLOCKS_CATEGORIES.includes(category)){
+    /* 景點細節 / 吃食相關 / 其他：直接顯示 blocks 內文，忽略 summary */
+    /* renderArticleContent 直接寫入 #articleBody，所以這裡直接呼叫並 return */
+    renderArticleContent('', content || '', notionUrl);
+    return;
+
+  } else {
+    /* 其餘：summary */
+    h += '<div class="article-content">';
+    h += summary ? renderSummary(summary, itemTitle)
+      : `<p style="font-size:11.5px;color:#B5A898;font-family:'Noto Sans TC',sans-serif">（摘要尚未填寫）</p>`;
+    h += '</div>';
+    h += notionBtn(notionUrl);
+  }
+
+  h += '<div style="height:24px"></div>';
+  body.innerHTML = h;
+}
+
+function renderArticleContent(pageId, text, notionUrl=''){
+  const body = document.getElementById('articleBody');
+  if(!text){
+    body.innerHTML = '<p style="font-size:12px;color:#8A8078;padding:8px 0;font-family:\'Noto Sans TC\',sans-serif">（暫無內容）</p>';
+    return;
+  }
+  const lines = text.split('\n');
+  let h = '<div class="article-content">';
+  let i = 0;
+  while(i < lines.length){
+    const line = lines[i];
+    if(!line.trim()){ i++; continue; }
+
+    if(line.startsWith('# '))
+      h += `<div class="ac-h1">${escHtml(line.slice(2))}</div>`;
+    else if(line.startsWith('## '))
+      h += `<div class="ac-h2">${escHtml(line.slice(3))}</div>`;
+    else if(line.startsWith('### '))
+      h += `<div class="ac-h3">${escHtml(line.slice(4))}</div>`;
+    else if(line.startsWith('• ') || line.startsWith('· '))
+      h += `<div class="ac-bullet">${escHtml(line.slice(2))}</div>`;
+    else if(line === '---')
+      h += `<hr style="border:none;border-top:0.5px solid #DDD7CC;margin:12px 0">`;
+    else if(line.startsWith('🖼 ')){
+      /* Next line is the image URL */
+      const caption = line.slice(2).trim();
+      const url = lines[i+1] && !lines[i+1].startsWith('🖼') && !lines[i+1].startsWith('🔗') ? lines[i+1].trim() : '';
+      if(url && (url.startsWith('http'))){
+        h += `<div style="margin:10px 0">
+          <img src="${escHtml(url)}" alt="${escHtml(caption)}" style="width:100%;border-radius:8px;object-fit:cover" loading="lazy" onerror="this.parentElement.style.display='none'">
+          ${caption !== '圖片' ? `<div style="font-size:10px;color:#8A8078;margin-top:4px;font-family:'Noto Sans TC',sans-serif">${escHtml(caption)}</div>` : ''}
+        </div>`;
+        i += 2; continue;
+      }
+    }
+    else if(line.startsWith('🔗 ')){
+      /* Next line is the URL */
+      const label = line.slice(2).trim();
+      const url = lines[i+1] && lines[i+1].startsWith('http') ? lines[i+1].trim() : label;
+      h += `<div style="margin:8px 0">
+        <a href="${escHtml(url)}" target="_blank" rel="noopener"
+           style="display:flex;align-items:center;gap:6px;background:#F0EDE8;border:0.5px solid #DDD7CC;border-radius:8px;padding:9px 11px;text-decoration:none">
+          <i class="ti ti-external-link" style="font-size:13px;color:#4E8C6E;flex-shrink:0"></i>
+          <span style="font-size:11.5px;color:#2D5E4A;font-family:'Noto Sans TC',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(label)}</span>
+        </a>
+      </div>`;
+      if(lines[i+1] && lines[i+1].startsWith('http')) i++;
+    }
+    else if(line.startsWith('❝ '))
+      h += `<div style="border-left:3px solid #4E8C6E;padding-left:10px;margin:8px 0;font-size:11.5px;color:#5A5248;font-family:'Noto Sans TC',sans-serif;font-style:italic">${escHtml(line.slice(2))}</div>`;
+    else if(line.startsWith('▸ '))
+      h += `<div style="font-size:12px;color:#2E2A24;font-family:'Noto Sans TC',sans-serif;margin:4px 0"><span style="color:#4E8C6E">▸</span> ${escHtml(line.slice(2))}</div>`;
+    else if(line.startsWith('| ')){
+      /* Markdown table: collect all consecutive | lines */
+      const tableLines = [];
+      while(i < lines.length && lines[i].trim().startsWith('|')){
+        tableLines.push(lines[i]); i++;
+      }
+      /* Parse: first row = header, second row = separator (skip), rest = body */
+      const parseRow = r => r.split('|').slice(1,-1).map(c => c.trim());
+      const header = parseRow(tableLines[0] || '');
+      const body   = tableLines.slice(2); /* skip separator row */
+
+      /* 欄位最小寬度設定（px）。不設 table-layout:fixed，讓瀏覽器依內容分配，
+         整體容器 overflow-x:auto，手機可左右捲動，各欄不會互相擠壓。 */
+      const COL_MINW = {
+        '星號': 32, '編號': 36, '法老': 80, '王朝': 44,
+        '參觀重點': 150, '相似墓穴比較': 130,
+      };
+      /* 星號欄：允許換行讓星星豎排；其餘短欄：nowrap 不折行 */
+      const COL_WRAP  = new Set(['星號','參觀重點','相似墓穴比較']);
+
+      h += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0;border-radius:8px;border:0.5px solid #DDD7CC">';
+      h += '<table style="border-collapse:collapse;font-family:\'Noto Sans TC\',sans-serif;table-layout:auto;white-space:nowrap">';
+      h += '<thead><tr>' + header.map(c => {
+        const minW = COL_MINW[c] || 50;
+        const ws   = COL_WRAP.has(c) ? 'white-space:normal;word-break:break-word;' : 'white-space:nowrap;';
+        return `<th style="background:#4E8C6E;color:#fff;font-size:10px;padding:7px 8px;text-align:left;min-width:${minW}px;${ws}">${escHtml(c)}</th>`;
+      }).join('') + '</tr></thead>';
+      h += '<tbody>';
+      body.forEach((row, ri) => {
+        const cells = parseRow(row);
+        const bg = ri % 2 === 1 ? 'background:#F9F6F0' : '';
+        h += '<tr style="border-top:0.5px solid #EDE9E2;' + bg + '">' + cells.map((c, ci) => {
+          const col = header[ci] || '';
+          const minW = COL_MINW[col] || 50;
+          const ws   = COL_WRAP.has(col)
+            ? 'white-space:normal;word-break:break-word;'
+            : 'white-space:nowrap;';
+          return `<td style="font-size:11px;color:#3A3530;padding:7px 8px;vertical-align:top;min-width:${minW}px;${ws}">${escHtml(c)}</td>`;
+        }).join('') + '</tr>';
+      });
+      h += '</tbody></table></div>';
+      continue; /* i already incremented in inner loop */
+    }
+    else
+      h += `<p>${escHtml(line)}</p>`;
+
+    i++;
+  }
+  h += '</div>';
+
+  h += notionBtn(notionUrl);
+  h += '<div style="height:24px"></div>';
+  body.innerHTML = h;
+}
+
+/* ═══════════════════════════════════════════════
+   EXPENSES
+═══════════════════════════════════════════════ */
+let expensesCache = null;
+/* tripItems: on-trip entries added via app (also stored in Notion, fetched with tag check) */
+
+async function openExpenses(){
+  document.getElementById('expBody').innerHTML =
+    '<div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中…</span></div>';
+  document.getElementById('expensesScreen').className = 'overlay open';
+  document.getElementById('expBody').scrollTop = 0;
+
+  if(expensesCache){
+    renderExpensesList(expensesCache);
+    return;
+  }
+
+  try{
+    const res = await fetch('/api/expenses');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    expensesCache = await res.json();
+    renderExpensesList(expensesCache);
+  } catch(err){
+    document.getElementById('expBody').innerHTML =
+      `<div class="error-slide"><i class="ti ti-wifi-off"></i><span>載入失敗</span><span style="font-size:10px;color:#C8C0B4">${escHtml(err.message)}</span></div>`;
+  }
+}
+
+/* Notion tag for on-trip entries — we distinguish by presence of Currency select */
+function renderExpensesList(items){
+  const body = document.getElementById('expBody');
+  if(!items || items.length === 0){
+    body.innerHTML = '<p style="font-size:12px;color:#8A8078;font-family:\'Noto Sans TC\',sans-serif;padding:8px 0">尚無支出記錄</p>';
+    return;
+  }
+
+  /* Split: prepaid (no currency or TWD from Notion default) vs trip (has explicit currency set) */
+  /* We use a simple heuristic: items that have freeCancel field or were created without Currency → prepaid */
+  /* Actually: all items come from same DB; we split by whether item has a dateStr that looks prepaid */
+  /* Best approach: treat items without Currency set (currency === 'TWD' and price large) as prepaid */
+  /* Simpler: user can tag prepaid items in Notion with a "Type" property, but we don't have that yet */
+  /* For now: split by whether currency is TWD (prepaid) vs EGP/USD (trip spending) */
+  const prepaid = items.filter(it => (it.currency || 'TWD') === 'TWD');
+  const trip    = items.filter(it => (it.currency || 'TWD') !== 'TWD');
+
+  /* Totals across both tables, grouped by currency */
+  const totals = {};
+  items.forEach(it => {
+    const cur = it.currency || 'TWD';
+    if(it.price != null) totals[cur] = (totals[cur] || 0) + it.price;
+  });
+
+  let h = '';
+
+  /* ── Summary cards ── */
+  h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">';
+  /* Always show TWD and USD at minimum */
+  const summaryOrder = ['TWD','USD','EGP'];
+  summaryOrder.forEach(cur => {
+    if(totals[cur] == null) return;
+    h += `<div class="exp-summary" style="flex:1;min-width:100px">
+      <div class="exp-summary-label">總計 · ${escHtml(cur)}</div>
+      <div class="exp-summary-amount">${escHtml(cur)} ${Number(totals[cur]).toLocaleString()}</div>
+    </div>`;
+  });
+  /* Any other currencies */
+  Object.entries(totals).forEach(([cur, amt]) => {
+    if(summaryOrder.includes(cur)) return;
+    h += `<div class="exp-summary" style="flex:1;min-width:100px">
+      <div class="exp-summary-label">總計 · ${escHtml(cur)}</div>
+      <div class="exp-summary-amount">${escHtml(cur)} ${Number(amt).toLocaleString()}</div>
+    </div>`;
+  });
+  h += '</div>';
+
+  /* ── Prepaid table ── */
+  h += `<div class="exp-section-head">
+    <div class="exp-section-head-left"><i class="ti ti-notebook"></i>預付費用</div>
+    <span style="font-size:9px;color:#B5A898;font-family:'Noto Sans TC',sans-serif">從 Notion 同步</span>
+  </div>`;
+  if(prepaid.length === 0){
+    h += `<p style="font-size:11px;color:#B5A898;font-family:'Noto Sans TC',sans-serif;padding:4px 0">尚無預付記錄</p>`;
+  } else {
+    h += `<div class="exp-table-wrap"><table class="exp-table">
+      <thead><tr><th>日期</th><th>項目</th><th style="text-align:right">金額</th><th style="text-align:center;width:32px">連結</th></tr></thead>
+      <tbody>`;
+    prepaid.forEach(item => {
+      const amt = item.price != null ? Number(item.price).toLocaleString() : '—';
+      const notionLink = item.notionUrl
+        ? `<a href="${escHtml(item.notionUrl)}" target="_blank" rel="noopener" style="color:#4E8C6E"><i class="ti ti-notebook" style="font-size:14px"></i></a>`
+        : '—';
+      h += `<tr>
+        <td class="td-date">${escHtml(item.dateStr||'')}</td>
+        <td class="td-name">${item.emoji ? escHtml(item.emoji)+' ' : ''}${escHtml(item.title)}</td>
+        <td class="td-price">NT$ ${escHtml(amt)}</td>
+        <td class="td-link">${notionLink}</td>
+      </tr>`;
+    });
+    h += `</tbody></table></div>`;
+  }
+
+  /* ── Trip spending table ── */
+  h += `<div class="exp-section-head" style="margin-top:16px">
+    <div class="exp-section-head-left"><i class="ti ti-pencil"></i>旅程支出</div>
+    <div class="exp-add-toggle" onclick="toggleExpAddForm()"><i class="ti ti-plus" style="font-size:11px"></i> 新增</div>
+  </div>`;
+
+  /* Add form (hidden by default) */
+  h += `<div class="exp-add-form" id="expAddForm" style="display:none">
+    <div class="exp-form-row">
+      <div class="exp-form-field" style="flex:2">
+        <div class="exp-form-label">項目名稱</div>
+        <input class="exp-form-input" id="expFormTitle" type="text" placeholder="門票、午餐…">
+      </div>
+      <div class="exp-form-field" style="flex:1">
+        <div class="exp-form-label">日期</div>
+        <input class="exp-form-input" id="expFormDate" type="text" placeholder="10/08">
+      </div>
+    </div>
+    <div class="exp-form-row">
+      <div class="exp-form-field" style="flex:2">
+        <div class="exp-form-label">金額</div>
+        <input class="exp-form-input" id="expFormPrice" type="number" placeholder="0">
+      </div>
+      <div class="exp-form-field" style="flex:1">
+        <div class="exp-form-label">幣別</div>
+        <select class="exp-form-select" id="expFormCurrency">
+          <option value="EGP">EGP</option>
+          <option value="USD">USD</option>
+          <option value="TWD">TWD</option>
+        </select>
+      </div>
+    </div>
+    <button class="exp-form-submit" onclick="submitExpense()">新增至 Notion ↑</button>
+  </div>`;
+
+  if(trip.length === 0){
+    h += `<p style="font-size:11px;color:#B5A898;font-family:'Noto Sans TC',sans-serif;padding:4px 0" id="expTripEmpty">尚無旅程支出</p>`;
+  } else {
+    h += `<div class="exp-table-wrap" id="expTripTable"><table class="exp-table">
+      <thead><tr><th>日期</th><th>項目</th><th style="text-align:right">金額</th><th style="text-align:center;width:32px"></th></tr></thead>
+      <tbody>`;
+    trip.forEach(item => {
+      const amt = item.price != null ? Number(item.price).toLocaleString() : '—';
+      const cur = item.currency || 'EGP';
+      h += `<tr id="exprow-${escHtml(item.id)}">
+        <td class="td-date">${escHtml(item.dateStr||'')}</td>
+        <td class="td-name">${item.emoji ? escHtml(item.emoji)+' ' : ''}${escHtml(item.title)}</td>
+        <td class="td-price">${escHtml(cur)} ${escHtml(amt)}</td>
+        <td class="td-link"><button class="exp-del-btn" onclick="deleteExpense('${escHtml(item.id)}')" title="刪除"><i class="ti ti-trash" style="font-size:14px;color:#C8A898"></i></button></td>
+      </tr>`;
+    });
+    h += `</tbody></table></div>`;
+  }
+
+  h += '<div style="height:24px"></div>';
+  body.innerHTML = h;
+
+  /* Pre-fill date with today in trip date range */
+  const today = new Date();
+  const tripStart = new Date('2026-10-08');
+  const tripEnd   = new Date('2026-10-20');
+  const useDate   = today >= tripStart && today <= tripEnd ? today : tripStart;
+  const mm = String(useDate.getMonth()+1).padStart(2,'0');
+  const dd = String(useDate.getDate()).padStart(2,'0');
+  const dateInput = document.getElementById('expFormDate');
+  if(dateInput) dateInput.value = `${mm}/${dd}`;
+}
+
+function toggleExpAddForm(){
+  const f = document.getElementById('expAddForm');
+  if(!f) return;
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function submitExpense(){
+  const title    = (document.getElementById('expFormTitle')?.value || '').trim();
+  const dateStr  = (document.getElementById('expFormDate')?.value  || '').trim();
+  const price    = (document.getElementById('expFormPrice')?.value || '').trim();
+  const currency = document.getElementById('expFormCurrency')?.value || 'EGP';
+
+  if(!title){ alert('請輸入項目名稱'); return; }
+
+  const btn = document.querySelector('.exp-form-submit');
+  if(btn){ btn.textContent = '儲存中…'; btn.disabled = true; }
+
+  try{
+    const res = await fetch('/api/expense-add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, dateStr, price: price ? parseFloat(price) : null, currency }),
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    /* Reload expenses */
+    expensesCache = null;
+    const res2 = await fetch('/api/expenses');
+    expensesCache = await res2.json();
+    renderExpensesList(expensesCache);
+  } catch(err){
+    alert('新增失敗：'+err.message);
+    if(btn){ btn.textContent = '新增至 Notion ↑'; btn.disabled = false; }
+  }
+}
+
+async function deleteExpense(pageId){
+  if(!confirm('確定刪除這筆支出？')) return;
+  try{
+    const res = await fetch('/api/expense-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: pageId }),
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    expensesCache = null;
+    const res2 = await fetch('/api/expenses');
+    expensesCache = await res2.json();
+    renderExpensesList(expensesCache);
+  } catch(err){
+    alert('刪除失敗：'+err.message);
+  }
+}
+
+/* ── Open single expense detail (kept for Notion link, not used in main UI) ── */
+async function openExpenseDetail(pageId, title){
+  document.getElementById('expDetailTitle').textContent = title;
+  document.getElementById('expDetailBody').innerHTML    =
+    '<div class="loading-slide"><i class="ti ti-loader-2"></i><span>載入中…</span></div>';
+  document.getElementById('expDetailScreen').className = 'overlay open';
+  document.getElementById('expDetailBody').scrollTop   = 0;
+
+  try{
+    const res = await fetch('/api/expense-page?id='+encodeURIComponent(pageId));
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    renderExpenseDetail(data, data.content || '');
+  } catch(err){
+    document.getElementById('expDetailBody').innerHTML =
+      `<div class="error-slide"><i class="ti ti-wifi-off"></i><span>載入失敗</span><span style="font-size:10px;color:#C8C0B4">${escHtml(err.message)}</span></div>`;
+  }
+}
+
+function renderExpenseDetail(item, content){
+  const body = document.getElementById('expDetailBody');
+  if(!item){ body.innerHTML = ''; return; }
+
+  const priceStr = item.price != null
+    ? `${item.currency} ${Number(item.price).toLocaleString()}`
+    : '—';
+
+  let h = `<div class="exp-detail-price">${escHtml(priceStr)}</div>
+  <div class="exp-detail-date">${escHtml(item.dateStr || '')}</div>`;
+
+  if(content){
+    h += `<div class="dsec-title"><i class="ti ti-notes"></i>備註</div>
+    <div class="note-box article-content">`;
+    const lines = content.split('\n');
+    lines.forEach(line => {
+      if(!line.trim()) return;
+      if(line.startsWith('• ') || line.startsWith('· '))
+        h += `<div class="ac-bullet">${escHtml(line.slice(2))}</div>`;
+      else
+        h += `<p>${escHtml(line)}</p>`;
+    });
+    h += '</div>';
+  }
+
+  h += '<div style="height:24px"></div>';
+  body.innerHTML = h;
+}
+
+/* ═══════════════════════════════════════════════
+   GLOBAL ERROR
+═══════════════════════════════════════════════ */
+function showGlobalError(msg){
+  for(let i=0;i<TOTAL_DAYS;i++){
+    const slide = document.getElementById('slide-'+i);
+    if(slide) slide.innerHTML = `<div class="error-slide">
+      <i class="ti ti-server-off"></i>
+      <span>無法連線至伺服器</span>
+      <span style="margin-top:4px;font-size:10px;color:#C8C0B4">
+        請確認 server.js 已啟動<br>${escHtml(msg)}
+      </span>
+    </div>`;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════ */
+function escHtml(str){
+  if(str==null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+function truncate(str, len){
+  if(!str) return '';
+  return str.length > len ? str.slice(0,len)+'…' : str;
+}
+
+/* ═══════════════════════════════════════════════
+   SERVICE WORKER (PWA)
+═══════════════════════════════════════════════ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   REFRESH — 清除前端快取並重新從 server 拉資料
+   同時呼叫 /api/refresh 清除 server 的快取
+═══════════════════════════════════════════════ */
+async function refreshAllData(){
+  const btn = document.getElementById('refreshBtn');
+  const icon = btn?.querySelector('i');
+  if(icon){ icon.style.transition='transform 0.6s'; icon.style.transform='rotate(360deg)'; }
+
+  /* 清除前端所有快取 */
+  Object.keys(infoCatCache).forEach(k => delete infoCatCache[k]);
+  expensesCache = null;
+  Object.keys(expDetailCache).forEach(k => delete expDetailCache[k]);
+  /* 清除 leaflet maps so they re-init with fresh data */
+  Object.keys(leafletMaps).forEach(k => { try{ leafletMaps[k].remove(); }catch(e){} delete leafletMaps[k]; });
+  /* 清除 slots cache */
+  slots = Array.from({length: TOTAL_DAYS}, () => []);
+
+  try{
+    /* Tell server to clear its cache too */
+    await fetch('/api/refresh');
+    /* Reload current day */
+    await loadItinerary();
+    renderDay(cur);
+  } catch(e){
+    console.warn('Refresh failed:', e);
+  }
+
+  setTimeout(() => { if(icon){ icon.style.transform=''; } }, 700);
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+buildDots();
+fetchAllData();
+</script>
+</body>
+</html>
